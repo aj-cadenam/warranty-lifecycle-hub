@@ -1,0 +1,27 @@
+[
+  {
+    "nombre": "Kyocera Document Solutions",
+    "email": "soporte@kyocera.co",
+    "tiempo_respuesta_dias": 5
+  },
+  {
+    "nombre": "Barco NV Colombia",
+    "email": "soporte@barco.com",
+    "tiempo_respuesta_dias": 7
+  },
+  {
+    "nombre": "Bose Professional",
+    "email": "soporte@bose.com",
+    "tiempo_respuesta_dias": 10
+  },
+  {
+    "nombre": "Crestron Electronics",
+    "email": "soporte@crestron.com",
+    "tiempo_respuesta_dias": 7
+  },
+  {
+    "nombre": "LG Business Solutions",
+    "email": "soporte@lg.com",
+    "tiempo_respuesta_dias": 5
+  }
+]
