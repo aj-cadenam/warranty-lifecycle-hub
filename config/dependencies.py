@@ -1,36 +1,38 @@
 # config/dependencies.py
 from config.settings import settings
-from src.equipos.infrastructure.repositories import DjangoEquipoRepository, DjangoGarantiaRepository
-from src.solicitudes.infrastructure.repositories import DjangoSolicitudRepository
-from src.trazabilidad.infrastructure.repositories import DjangoTrazabilidadRepository
-from src.seguimiento.infrastructure.repositories import DjangoBorradorCorreoRepository, DjangoEventoSeguimientoRepository
 from src.agente.infrastructure.email.fake_email_adapter import FakeEmailAdapter
 from src.agente.infrastructure.llm.fake_llm_adapter import FakeLLMAdapter
 from src.agente.infrastructure.embeddings.fake_embedding_adapter import FakeEmbeddingAdapter
 from src.agente.infrastructure.ocr.fake_ocr_adapter import FakeOCRAdapter
 
 
-def get_equipo_repo() -> DjangoEquipoRepository:
+def get_equipo_repo():
+    from src.equipos.infrastructure.repositories import DjangoEquipoRepository
     return DjangoEquipoRepository()
 
 
-def get_garantia_repo() -> DjangoGarantiaRepository:
+def get_garantia_repo():
+    from src.equipos.infrastructure.repositories import DjangoGarantiaRepository
     return DjangoGarantiaRepository()
 
 
-def get_solicitud_repo() -> DjangoSolicitudRepository:
+def get_solicitud_repo():
+    from src.solicitudes.infrastructure.repositories import DjangoSolicitudRepository
     return DjangoSolicitudRepository()
 
 
-def get_trazabilidad_repo() -> DjangoTrazabilidadRepository:
+def get_trazabilidad_repo():
+    from src.trazabilidad.infrastructure.repositories import DjangoTrazabilidadRepository
     return DjangoTrazabilidadRepository()
 
 
-def get_borrador_repo() -> DjangoBorradorCorreoRepository:
+def get_borrador_repo():
+    from src.seguimiento.infrastructure.repositories import DjangoBorradorCorreoRepository
     return DjangoBorradorCorreoRepository()
 
 
-def get_evento_seguimiento_repo() -> DjangoEventoSeguimientoRepository:
+def get_evento_seguimiento_repo():
+    from src.seguimiento.infrastructure.repositories import DjangoEventoSeguimientoRepository
     return DjangoEventoSeguimientoRepository()
 
 

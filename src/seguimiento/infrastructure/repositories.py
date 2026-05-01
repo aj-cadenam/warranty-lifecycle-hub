@@ -9,8 +9,10 @@ class DjangoBorradorCorreoRepository(BorradorCorreoRepository):
         pk = int(b.id) if b.id.isdigit() else None
         obj, created = BorradorCorreoModel.objects.update_or_create(
             id=pk,
-            defaults=dict(solicitud_id=0, destinatario_tipo=b.destinatario_tipo.value,
-                          destinatario_email=b.destinatario_email, asunto=b.asunto, cuerpo=b.cuerpo,
+            defaults=dict(solicitud_id=int(b.solicitud_id) if b.solicitud_id.isdigit() else 0,
+                          destinatario_tipo=b.destinatario_tipo.value,
+                          destinatario_email=b.destinatario_email, asunto=b.asunto,
+                          cuerpo=b.cuerpo,
                           estado=b.estado.value, aprobado_por=b.aprobado_por,
                           motivo_rechazo=b.motivo_rechazo, fecha_aprobacion=b.fecha_aprobacion),
         )

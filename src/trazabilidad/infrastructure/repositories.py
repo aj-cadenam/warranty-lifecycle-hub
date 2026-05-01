@@ -13,6 +13,7 @@ class DjangoTrazabilidadRepository(TrazabilidadRepository):
             ubicacion_nueva=evento.ubicacion_nueva,
             responsable=evento.responsable,
             metodo_registro=evento.metodo_registro.value,
+            timestamp=evento.timestamp,
         )
         evento.id = str(obj.id)
 
