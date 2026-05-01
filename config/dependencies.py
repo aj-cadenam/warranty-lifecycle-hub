@@ -2,6 +2,7 @@
 from config.settings import settings
 from src.equipos.infrastructure.repositories import DjangoEquipoRepository, DjangoGarantiaRepository
 from src.solicitudes.infrastructure.repositories import DjangoSolicitudRepository
+from src.trazabilidad.infrastructure.repositories import DjangoTrazabilidadRepository
 from src.seguimiento.infrastructure.repositories import DjangoBorradorCorreoRepository, DjangoEventoSeguimientoRepository
 from src.agente.infrastructure.email.fake_email_adapter import FakeEmailAdapter
 from src.agente.infrastructure.llm.fake_llm_adapter import FakeLLMAdapter
@@ -19,6 +20,10 @@ def get_garantia_repo() -> DjangoGarantiaRepository:
 
 def get_solicitud_repo() -> DjangoSolicitudRepository:
     return DjangoSolicitudRepository()
+
+
+def get_trazabilidad_repo() -> DjangoTrazabilidadRepository:
+    return DjangoTrazabilidadRepository()
 
 
 def get_borrador_repo() -> DjangoBorradorCorreoRepository:
