@@ -1,33 +1,19 @@
-"""
-Django standalone settings para usar únicamente el ORM.
-No se usa el servidor web de Django.
-"""
-import os
-from pathlib import Path
+import dj_database_url
+from config.settings import settings
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
-
-DEBUG = os.environ.get("DEBUG", "true").lower() == "true"
+SECRET_KEY = settings.SECRET_KEY
+DEBUG = settings.DEBUG
 
 INSTALLED_APPS = [
-    "django.contrib.contenttypes",
-    "django.contrib.auth",
+    "src.equipos.infrastructure",
+    "src.solicitudes.infrastructure",
+    "src.trazabilidad.infrastructure",
+    "src.seguimiento.infrastructure",
+    "src.notificaciones.infrastructure",
 ]
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "garantias"),
-        "USER": os.environ.get("POSTGRES_USER", "user"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "pass"),
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-    }
+    "default": dj_database_url.parse(settings.DATABASE_URL)
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-USE_TZ = True
-TIME_ZONE = "UTC"
