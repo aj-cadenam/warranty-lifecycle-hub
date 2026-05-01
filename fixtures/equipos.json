@@ -1,0 +1,37 @@
+[
+  {
+    "serial": "KYO-TASKalfa-2021-001",
+    "marca": "Kyocera",
+    "modelo": "TASKalfa 2553ci",
+    "tipo": "multifuncional_impresion",
+    "ubicacion": "Piso 3 - Área Administrativa"
+  },
+  {
+    "serial": "BAR-CS-2022-014",
+    "marca": "Barco",
+    "modelo": "ClickShare CX-50",
+    "tipo": "colaboracion_audiovisual",
+    "ubicacion": "Sala de Juntas Principal"
+  },
+  {
+    "serial": "BSP-PMX-2020-007",
+    "marca": "Bose Professional",
+    "modelo": "PowerMatch PM8500N",
+    "tipo": "audio_corporativo",
+    "ubicacion": "Auditorio"
+  },
+  {
+    "serial": "CRE-TSW-2023-003",
+    "marca": "Crestron",
+    "modelo": "TSW-770",
+    "tipo": "automatizacion_sala",
+    "ubicacion": "Sala Ejecutiva B"
+  },
+  {
+    "serial": "LG-MRI-2022-021",
+    "marca": "LG Business",
+    "modelo": "55SM5KE",
+    "tipo": "senalizacion_digital",
+    "ubicacion": "Recepción Principal"
+  }
+]
