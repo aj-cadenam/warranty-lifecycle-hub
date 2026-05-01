@@ -1,1 +1,51 @@
-# Dependency injection para FastAPI — se completa en Task 10
+# config/dependencies.py
+from config.settings import settings
+from src.equipos.infrastructure.repositories import DjangoEquipoRepository, DjangoGarantiaRepository
+from src.solicitudes.infrastructure.repositories import DjangoSolicitudRepository
+from src.seguimiento.infrastructure.repositories import DjangoBorradorCorreoRepository, DjangoEventoSeguimientoRepository
+from src.agente.infrastructure.email.fake_email_adapter import FakeEmailAdapter
+from src.agente.infrastructure.llm.fake_llm_adapter import FakeLLMAdapter
+from src.agente.infrastructure.embeddings.fake_embedding_adapter import FakeEmbeddingAdapter
+from src.agente.infrastructure.ocr.fake_ocr_adapter import FakeOCRAdapter
+
+
+def get_equipo_repo() -> DjangoEquipoRepository:
+    return DjangoEquipoRepository()
+
+
+def get_garantia_repo() -> DjangoGarantiaRepository:
+    return DjangoGarantiaRepository()
+
+
+def get_solicitud_repo() -> DjangoSolicitudRepository:
+    return DjangoSolicitudRepository()
+
+
+def get_borrador_repo() -> DjangoBorradorCorreoRepository:
+    return DjangoBorradorCorreoRepository()
+
+
+def get_evento_seguimiento_repo() -> DjangoEventoSeguimientoRepository:
+    return DjangoEventoSeguimientoRepository()
+
+
+def get_email_adapter() -> FakeEmailAdapter:
+    return FakeEmailAdapter()
+
+
+def get_llm_adapter():
+    if settings.LLM_PROVIDER == "gemini":
+        from src.agente.infrastructure.llm.gemini_llm_adapter import GeminiLLMAdapter
+        return GeminiLLMAdapter(api_key=settings.GEMINI_API_KEY)
+    return FakeLLMAdapter()
+
+
+def get_embedding_adapter():
+    if settings.EMBEDDING_PROVIDER == "gemini":
+        from src.agente.infrastructure.embeddings.gemini_embedding_adapter import GeminiEmbeddingAdapter
+        return GeminiEmbeddingAdapter(api_key=settings.GEMINI_API_KEY, dim=settings.EMBEDDING_DIM)
+    return FakeEmbeddingAdapter(dim=settings.EMBEDDING_DIM)
+
+
+def get_ocr_adapter() -> FakeOCRAdapter:
+    return FakeOCRAdapter()
