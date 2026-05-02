@@ -13,40 +13,24 @@ interface TimelineEvent {
 function buildTimeline(solicitud: SolicitudGarantia): TimelineEvent[] {
   const events: TimelineEvent[] = []
 
-  // Creation event
   events.push({
     id: 'created',
     type: 'agente',
     title: 'Solicitud creada',
     description: `Reportado por: ${solicitud.reportado_por}`,
-    timestamp: solicitud.created_at,
+    timestamp: solicitud.fecha_reporte,
     details: solicitud.descripcion_falla ? [`Falla: ${solicitud.descripcion_falla}`] : undefined,
   })
 
-  // Trazabilidad events
   if (solicitud.eventos && solicitud.eventos.length > 0) {
     solicitud.eventos.forEach((evento) => {
       events.push({
         id: evento.id,
-        type: evento.metodo_registro === 'agente' ? 'agente' : 'usuario',
+        type: evento.metodo_registro.includes('agente') ? 'agente' : 'usuario',
         title: `Movimiento: ${evento.ubicacion_anterior} → ${evento.ubicacion_nueva}`,
-        description: evento.descripcion,
-        timestamp: evento.created_at,
+        description: evento.notas || undefined,
+        timestamp: evento.timestamp,
       })
-    })
-  }
-
-  // State changes based on current state
-  const stateOrder = ['nueva', 'validada', 'despachada', 'en_reparacion', 'devuelta', 'cerrada']
-  const currentIndex = stateOrder.indexOf(solicitud.estado)
-
-  for (let i = 1; i <= currentIndex; i++) {
-    const estado = stateOrder[i]
-    events.push({
-      id: `state-${estado}`,
-      type: 'estado',
-      title: `Estado actualizado: ${formatEstado(estado)}`,
-      timestamp: solicitud.updated_at,
     })
   }
 
@@ -75,8 +59,10 @@ function formatTime(dateStr: string): string {
 }
 
 function formatDate(dateStr: string): string {
+  if (!dateStr) return '—'
   try {
-    const date = new Date(dateStr)
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T00:00`
+    const date = new Date(normalized)
     return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
   } catch {
     return dateStr

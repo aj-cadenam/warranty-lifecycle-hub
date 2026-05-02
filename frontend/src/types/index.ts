@@ -41,8 +41,7 @@ export interface SolicitudGarantia {
   reportado_por: string
   descripcion_falla: string
   estado: EstadoSolicitud
-  created_at: string
-  updated_at: string
+  fecha_reporte: string
   equipo?: Equipo
   eventos?: EventoTrazabilidad[]
 }
@@ -54,8 +53,8 @@ export interface EventoTrazabilidad {
   ubicacion_anterior: string
   ubicacion_nueva: string
   metodo_registro: string
-  created_at: string
-  descripcion?: string
+  timestamp: string
+  notas: string
 }
 
 export interface BorradorCorreo {
@@ -122,4 +121,26 @@ export interface ChatMessage {
   role: 'user' | 'agent'
   content: string
   timestamp: Date
+}
+
+export interface ChatContexto {
+  solicitudes_activas: number
+  borradores_pendientes: number
+  equipos_activos: string[]
+}
+
+export interface ChatRequest {
+  mensaje: string
+  contexto: ChatContexto
+}
+
+export interface ChatResponse {
+  respuesta: string
+  accion: '' | 'buscar_similares' | 'verificar_semanal'
+  query_busqueda: string
+}
+
+export interface HealthResponse {
+  status: string
+  llm_provider: string
 }

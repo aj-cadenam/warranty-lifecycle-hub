@@ -1,4 +1,5 @@
 from typing import Optional, Tuple
+from langfuse import observe
 from src.agente.domain.ports import OCRPort, LLMPort, EmbeddingPort, VectorStorePort
 from src.agente.domain.entities import DecisionAgente, Accion
 from src.agente.infrastructure.chunking import ChunkingService
@@ -24,6 +25,7 @@ class ProcesarDocumento:
         self._crear_solicitud = crear_solicitud
         self._chunker = ChunkingService(chunk_size=chunk_size, overlap=overlap)
 
+    @observe(name="procesar_documento")
     def execute(self, pdf_path: str, extra_metadata: dict | None = None) -> Tuple[DecisionAgente, Optional[SolicitudGarantia]]:
         texto = self._ocr.extract_text(pdf_path)
         base_meta = {"pdf_path": pdf_path, **(extra_metadata or {})}

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Bot } from 'lucide-react'
 import type { SolicitudGarantia, BorradorCorreo } from '../../types'
 import { AgentChat } from '../agent/AgentChat'
+import { api } from '../../api/client'
 
 interface RightPanelProps {
   solicitudes: SolicitudGarantia[]
@@ -9,6 +11,12 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ solicitudes, borradores, onToast }: RightPanelProps) {
+  const [llmProvider, setLlmProvider] = useState('...')
+  useEffect(() => {
+    api.getHealth().then(h => setLlmProvider(h.llm_provider)).catch(() => setLlmProvider('?'))
+  }, [])
+  const providerLabel = llmProvider === 'gemini' ? 'Gemini · Real' : llmProvider === '...' ? 'Gemini · ...' : 'Gemini · Mock mode'
+
   return (
     <div className="w-80 flex-shrink-0 bg-white border-l border-slate-200 flex flex-col h-full">
       {/* Header */}
@@ -25,7 +33,7 @@ export function RightPanel({ solicitudes, borradores, onToast }: RightPanelProps
                 <span className="text-xs text-green-600 font-medium">Activo</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400">Gemini · Mock mode</p>
+            <p className="text-xs text-slate-400">{providerLabel}</p>
           </div>
         </div>
       </div>

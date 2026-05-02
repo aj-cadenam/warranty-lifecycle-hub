@@ -81,7 +81,8 @@ export function BuscarSimilaresModal({ query, resultados, onClose }: BuscarSimil
 
 function ResultCard({ solicitud: s }: { solicitud: BuscarResultado }) {
   const stateClass = ESTADO_COLOR[s.estado] ?? 'bg-slate-100 text-slate-500 border-slate-200'
-  const date = new Date(s.fecha_reporte).toLocaleDateString('es-CO', {
+  const normalized = s.fecha_reporte?.includes('T') ? s.fecha_reporte : `${s.fecha_reporte}T00:00`
+  const date = new Date(normalized).toLocaleDateString('es-CO', {
     day: '2-digit', month: 'short', year: 'numeric',
   })
   const similitud = Math.round(s.similitud * 100)

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Bot } from 'lucide-react'
 import type { ChatMessage, SolicitudGarantia, BorradorCorreo, BuscarResultado } from '../../types'
-import { useVerificarSemanal, useBuscarSimilares } from '../../hooks/useSolicitudes'
+import { useVerificarSemanal, useBuscarSimilares, useChatAgente } from '../../hooks/useSolicitudes'
 
 const SUGGESTED_PROMPTS = [
   '¿Cuál es el estado actual?',
@@ -9,69 +9,6 @@ const SUGGESTED_PROMPTS = [
   'Buscar casos similares',
   'Verificar garantías',
 ]
-
-function generateAgentResponse(
-  input: string,
-  solicitudes: SolicitudGarantia[],
-  borradores: BorradorCorreo[],
-): string {
-  const lowerInput = input.toLowerCase()
-
-  if (lowerInput.includes('estado') || lowerInput.includes('actual') || lowerInput.includes('resumen')) {
-    const activas = solicitudes.filter((s) => s.estado !== 'cerrada')
-    const porEstado = solicitudes.reduce<Record<string, number>>((acc, s) => {
-      acc[s.estado] = (acc[s.estado] || 0) + 1
-      return acc
-    }, {})
-    if (solicitudes.length === 0) {
-      return 'No hay solicitudes registradas. El backend puede estar iniciando — reintenta en un momento.'
-    }
-    return [
-      `Tengo ${solicitudes.length} solicitudes en total, ${activas.length} activas.`,
-      '',
-      'Distribución por estado:',
-      ...Object.entries(porEstado).map(
-        ([estado, count]) => `• ${estado.replace('_', ' ')}: ${count} solicitud${count > 1 ? 'es' : ''}`
-      ),
-    ].join('\n')
-  }
-
-  if (lowerInput.includes('borrador') || lowerInput.includes('pendiente') || lowerInput.includes('correo')) {
-    const pendientes = borradores.filter((b) => b.estado === 'pendiente_aprobacion')
-    if (pendientes.length === 0) {
-      return 'No hay borradores pendientes de aprobación en este momento.'
-    }
-    return [
-      `Hay ${pendientes.length} borrador${pendientes.length > 1 ? 'es' : ''} pendiente${pendientes.length > 1 ? 's' : ''} de aprobación:`,
-      '',
-      ...pendientes.map((b, i) => `${i + 1}. Para: ${b.destinatario_email}\n   Asunto: ${b.asunto}`),
-      '',
-      'Apruébalos o recházalos desde la sección "Borradores".',
-    ].join('\n')
-  }
-
-  if (
-    lowerInput.includes('verificar') ||
-    lowerInput.includes('garantías') ||
-    lowerInput.includes('garantias') ||
-    lowerInput.includes('semanal')
-  ) {
-    return 'Iniciando verificación semanal... Usa el botón "Verificar Semanal" en el encabezado para ejecutarla y ver los resultados completos.'
-  }
-
-  if (lowerInput.includes('documento') || lowerInput.includes('pdf') || lowerInput.includes('procesar')) {
-    return 'Para procesar un PDF, usa el botón "Procesar PDF" en el encabezado. El agente extraerá la información del equipo, la falla y creará automáticamente una solicitud de garantía.'
-  }
-
-  if (lowerInput.includes('equipo') || lowerInput.includes('kyocera') || lowerInput.includes('barco')) {
-    const activos = solicitudes.filter((s) => s.estado !== 'cerrada').slice(0, 3).map((s) => s.equipo_id)
-    return `Equipos con solicitudes activas:\n${activos.map((id) => `• ${id}`).join('\n') || 'Ninguno'}\n\nVe el detalle completo en la sección "Equipos".`
-  }
-
-  const activasCount = solicitudes.filter((s) => s.estado !== 'cerrada').length
-  const pendientesCount = borradores.filter((b) => b.estado === 'pendiente_aprobacion').length
-  return `Entendido. Actualmente gestiono ${activasCount} solicitudes activas${pendientesCount > 0 ? ` y ${pendientesCount} borrador${pendientesCount > 1 ? 'es' : ''} pendiente${pendientesCount > 1 ? 's' : ''}` : ''}. ¿En qué más te puedo ayudar?`
-}
 
 function formatBuscarResults(query: string, resultados: BuscarResultado[]): string {
   if (resultados.length === 0) {
@@ -100,8 +37,9 @@ export function AgentChat({ solicitudes, borradores, onToast }: AgentChatProps) 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const verificarMutation = useVerificarSemanal()
   const buscarMutation = useBuscarSimilares()
+  const chatMutation = useChatAgente()
   const hasInitialized = useRef(false)
-  const isThinking = verificarMutation.isPending || buscarMutation.isPending
+  const isThinking = verificarMutation.isPending || buscarMutation.isPending || chatMutation.isPending
 
   useEffect(() => {
     if (!hasInitialized.current) {
@@ -145,7 +83,7 @@ export function AgentChat({ solicitudes, borradores, onToast }: AgentChatProps) 
 
     const lower = text.toLowerCase()
 
-    // Semantic search
+    // Shortcut: semantic search button goes directly to backend without LLM round-trip
     const isBuscar =
       lower.startsWith('buscar ') ||
       lower.startsWith('busca ') ||
@@ -168,24 +106,48 @@ export function AgentChat({ solicitudes, borradores, onToast }: AgentChatProps) 
       return
     }
 
-    // Weekly verification
-    if (lower.includes('verificar') || lower.includes('semanal')) {
-      try {
-        const result = await verificarMutation.mutateAsync()
-        pushAgentMsg(
-          `Verificación semanal completada.\n\n• Solicitudes verificadas: ${result.solicitudes_verificadas}\n• Borradores generados: ${result.borradores_generados}\n• Escalaciones: ${result.escalaciones}\n\n${result.mensaje}`
-        )
-        onToast('Verificación semanal completada', 'success')
-      } catch {
-        pushAgentMsg('No pude conectarme con el endpoint de verificación. ¿El backend está corriendo en http://localhost:8000?')
-      }
-      return
-    }
+    // All other input goes to real LLM
+    const activasCount = solicitudes.filter((s) => s.estado !== 'cerrada').length
+    const pendientesCount = borradores.filter((b) => b.estado === 'pendiente_aprobacion').length
+    const equiposActivos = solicitudes
+      .filter((s) => s.estado !== 'cerrada')
+      .slice(0, 5)
+      .map((s) => s.equipo_id)
 
-    // Local responses
-    setTimeout(() => {
-      pushAgentMsg(generateAgentResponse(text, solicitudes, borradores))
-    }, 400)
+    try {
+      const result = await chatMutation.mutateAsync({
+        mensaje: text,
+        contexto: {
+          solicitudes_activas: activasCount,
+          borradores_pendientes: pendientesCount,
+          equipos_activos: equiposActivos,
+        },
+      })
+
+      pushAgentMsg(result.respuesta)
+
+      // LLM may also request a side-effect action
+      if (result.accion === 'buscar_similares' && result.query_busqueda) {
+        try {
+          const buscarResult = await buscarMutation.mutateAsync(result.query_busqueda)
+          pushAgentMsg(formatBuscarResults(result.query_busqueda, buscarResult.resultados))
+        } catch {
+          pushAgentMsg('No pude ejecutar la búsqueda semántica.')
+        }
+      } else if (result.accion === 'verificar_semanal') {
+        try {
+          const vResult = await verificarMutation.mutateAsync()
+          pushAgentMsg(
+            `Verificación completada: ${vResult.solicitudes_verificadas} solicitudes verificadas, ${vResult.borradores_generados} borradores generados.`
+          )
+          onToast('Verificación semanal completada', 'success')
+        } catch {
+          pushAgentMsg('No pude ejecutar la verificación semanal.')
+        }
+      }
+    } catch {
+      pushAgentMsg('No pude conectarme con el agente. ¿El backend está corriendo en http://localhost:8000?')
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

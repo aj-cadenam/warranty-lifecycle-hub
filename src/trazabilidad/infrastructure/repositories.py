@@ -14,6 +14,8 @@ class DjangoTrazabilidadRepository(TrazabilidadRepository):
             responsable=evento.responsable,
             metodo_registro=evento.metodo_registro.value,
             timestamp=evento.timestamp,
+            notas=evento.notas,
+            tiempo_estimado_dias=evento.tiempo_estimado_dias,
         )
         evento.id = str(obj.id)
 
@@ -45,4 +47,6 @@ class DjangoTrazabilidadRepository(TrazabilidadRepository):
             responsable=m.responsable,
             timestamp=m.timestamp,
             metodo_registro=MetodoRegistro(m.metodo_registro),
+            notas=m.notas,
+            tiempo_estimado_dias=m.tiempo_estimado_dias,
         )

@@ -36,8 +36,23 @@ def get_evento_seguimiento_repo():
     return DjangoEventoSeguimientoRepository()
 
 
-def get_email_adapter() -> FakeEmailAdapter:
+def get_email_adapter():
+    if settings.EMAIL_BACKEND == "outlook":
+        from src.agente.infrastructure.email.outlook_adapter import OutlookSMTPAdapter
+        return OutlookSMTPAdapter(address=settings.EMAIL_ADDRESS, password=settings.EMAIL_PASSWORD)
     return FakeEmailAdapter()
+
+
+def get_email_reader():
+    if settings.EMAIL_BACKEND == "outlook":
+        from src.agente.infrastructure.email.outlook_adapter import OutlookIMAPAdapter
+        return OutlookIMAPAdapter(
+            address=settings.EMAIL_ADDRESS,
+            password=settings.EMAIL_PASSWORD,
+            folder=settings.EMAIL_IMAP_FOLDER,
+        )
+    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
+    return FakeEmailReaderAdapter()
 
 
 def get_llm_adapter():

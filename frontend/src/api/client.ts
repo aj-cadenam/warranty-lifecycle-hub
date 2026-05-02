@@ -1,4 +1,4 @@
-import type { SolicitudGarantia, BorradorCorreo, BuscarResultado, Equipo, VerificarSemanalResult, Notificacion, NuevoEquipoData, ProcesarDocumentoResult } from '../types'
+import type { SolicitudGarantia, BorradorCorreo, BuscarResultado, Equipo, VerificarSemanalResult, Notificacion, NuevoEquipoData, ProcesarDocumentoResult, ChatRequest, ChatResponse, HealthResponse } from '../types'
 
 const API_BASE = '/api'
 
@@ -95,4 +95,14 @@ export const api = {
 
   buscarSimilares: (q: string): Promise<{ resultados: BuscarResultado[] }> =>
     fetchJson<{ resultados: BuscarResultado[] }>(`${API_BASE}/agente/buscar-similares?q=${encodeURIComponent(q)}`),
+
+  chatAgente: (payload: ChatRequest): Promise<ChatResponse> =>
+    fetchJson<ChatResponse>(`${API_BASE}/agente/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getHealth: (): Promise<HealthResponse> =>
+    fetchJson<HealthResponse>(`${API_BASE}/health`),
 }

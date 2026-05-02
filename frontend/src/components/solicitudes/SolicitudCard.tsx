@@ -6,8 +6,11 @@ import { SolicitudTimeline } from './SolicitudTimeline'
 import { StepTracker } from './StepTracker'
 
 function formatDate(dateStr: string): string {
+  if (!dateStr) return '—'
   try {
-    const date = new Date(dateStr)
+    // YYYY-MM-DD dates must be parsed with T00:00 to avoid UTC off-by-one in UTC-5
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T00:00`
+    const date = new Date(normalized)
     return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
   } catch {
     return dateStr
@@ -49,7 +52,7 @@ export function SolicitudCard({ solicitud }: SolicitudCardProps) {
           </div>
           <div className="flex items-center gap-2 text-slate-400">
             <Calendar size={13} />
-            <span className="text-xs">{formatDate(solicitud.created_at)}</span>
+            <span className="text-xs">{formatDate(solicitud.fecha_reporte)}</span>
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
         </div>

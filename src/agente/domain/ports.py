@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.agente.domain.entities import DecisionAgente
+    from src.agente.domain.entities import DecisionAgente, DecisionCorreo, CorreoEntrante, RespuestaChat
 
 
 class OCRPort(ABC):
@@ -15,6 +15,10 @@ class LLMPort(ABC):
     def decide(self, context: str) -> "DecisionAgente": ...
     @abstractmethod
     def generate_email(self, context: str) -> dict[str, str]: ...
+    @abstractmethod
+    def classify_email(self, asunto: str, cuerpo: str) -> "DecisionCorreo": ...
+    @abstractmethod
+    def chat(self, mensaje: str, contexto: dict) -> "RespuestaChat": ...
 
 
 class EmbeddingPort(ABC):
@@ -32,3 +36,10 @@ class VectorStorePort(ABC):
 class EmailPort(ABC):
     @abstractmethod
     def send(self, to: str, subject: str, body: str) -> None: ...
+
+
+class EmailReaderPort(ABC):
+    @abstractmethod
+    def fetch_unread(self) -> "list[CorreoEntrante]": ...
+    @abstractmethod
+    def mark_as_read(self, uid: str) -> None: ...

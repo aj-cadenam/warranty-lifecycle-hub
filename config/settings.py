@@ -11,8 +11,15 @@ class Settings(BaseSettings):
     EMBEDDING_DIM: int = 768
 
     OCR_BACKEND: str = "mock"
-    EMAIL_BACKEND: str = "mock"
-    EMAIL_HOST: str = ""
+    EMAIL_BACKEND: str = "mock"        # "mock" | "outlook"
+    EMAIL_ADDRESS: str = ""
+    EMAIL_PASSWORD: str = ""
+    EMAIL_IMAP_FOLDER: str = "INBOX"
+    EMAIL_POLLING_INTERVAL_MINUTES: int = 5
+
+    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
 
     TIMEOUT_PROVEEDOR_DIAS: int = 7
     TIMEOUT_CLIENTE_DIAS: int = 7

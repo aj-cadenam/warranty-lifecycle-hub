@@ -12,6 +12,7 @@ from config.dependencies import (
     get_borrador_repo,
     get_evento_seguimiento_repo,
     get_vector_store,
+    get_email_reader,
 )
 from config.settings import settings
 from src.agente.application.procesar_documento import ProcesarDocumento
@@ -147,3 +148,51 @@ def buscar_similares(
             })
 
     return {"resultados": resultados, "query": q}
+
+
+@router.post("/procesar-correos")
+def procesar_correos(
+    llm=Depends(get_llm_adapter),
+    email_reader=Depends(get_email_reader),
+    ocr=Depends(get_ocr_adapter),
+    embedding=Depends(get_embedding_adapter),
+    vector_store=Depends(get_vector_store),
+    solicitud_repo=Depends(get_solicitud_repo),
+    garantia_repo=Depends(get_garantia_repo),
+    trazabilidad_repo=Depends(get_trazabilidad_repo),
+):
+    from src.agente.application.procesar_correo import ProcesarCorreo
+    from src.solicitudes.application.crear_solicitud import CrearSolicitud
+
+    caso_uso = ProcesarCorreo(
+        llm=llm,
+        email_reader=email_reader,
+        ocr=ocr,
+        embedding=embedding,
+        vector_store=vector_store,
+        solicitud_repo=solicitud_repo,
+        trazabilidad_repo=trazabilidad_repo,
+        crear_solicitud=CrearSolicitud(solicitud_repo=solicitud_repo, garantia_repo=garantia_repo),
+    )
+    return caso_uso.execute()
+
+
+class ContextoChat(BaseModel):
+    solicitudes_activas: int = 0
+    borradores_pendientes: int = 0
+    equipos_activos: list[str] = []
+
+
+class ChatAgenteRequest(BaseModel):
+    mensaje: str
+    contexto: ContextoChat = ContextoChat()
+
+
+@router.post("/chat")
+def chat_agente(data: ChatAgenteRequest, llm=Depends(get_llm_adapter)):
+    resultado = llm.chat(mensaje=data.mensaje, contexto=data.contexto.model_dump())
+    return {
+        "respuesta": resultado.respuesta,
+        "accion": resultado.accion,
+        "query_busqueda": resultado.query_busqueda,
+    }

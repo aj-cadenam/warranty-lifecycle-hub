@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, RefreshCw, Search, Shield, Monitor, Inbox, CheckSquare, FileText, Bell, Bot, Sparkles, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import type { NavSection, SolicitudGarantia, BorradorCorreo, Equipo, Notificacion } from '../../types'
 import { SolicitudCard } from '../solicitudes/SolicitudCard'
 import { BorradorCard } from '../borradores/BorradorCard'
 import { SolicitudCardSkeleton } from '../ui/Skeleton'
 import { useVerificarSemanal } from '../../hooks/useSolicitudes'
+import { api } from '../../api/client'
 import { NewSolicitudModal } from './NewSolicitudModal'
 import { NuevoEquipoModal } from '../equipos/NuevoEquipoModal'
 import { ProcesarDocumentoModal } from '../agente/ProcesarDocumentoModal'
@@ -49,7 +50,13 @@ export function CenterPanel({
   const [showNewSolicitudModal, setShowNewSolicitudModal] = useState(false)
   const [showNuevoEquipoModal, setShowNuevoEquipoModal] = useState(false)
   const [showProcesarDocumentoModal, setShowProcesarDocumentoModal] = useState(false)
+  const [llmProvider, setLlmProvider] = useState('...')
   const verificarMutation = useVerificarSemanal()
+
+  useEffect(() => {
+    api.getHealth().then(h => setLlmProvider(h.llm_provider)).catch(() => setLlmProvider('?'))
+  }, [])
+  const providerLabel = llmProvider === 'gemini' ? 'Gemini · Real' : llmProvider === '...' ? 'Gemini · ...' : 'Gemini · Mock mode'
 
   const title = SECTION_TITLES[activeSection]
 
@@ -247,7 +254,7 @@ export function CenterPanel({
                       <span className="text-xs text-green-600 font-medium">Activo</span>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400">Gemini · Mock mode</p>
+                  <p className="text-xs text-slate-400">{providerLabel}</p>
                 </div>
               </div>
             </div>

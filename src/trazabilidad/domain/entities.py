@@ -19,3 +19,5 @@ class EventoTrazabilidad(BaseEntity):
     responsable: str = ""
     timestamp: datetime = field(default_factory=datetime.now)
     metodo_registro: MetodoRegistro = MetodoRegistro.MANUAL
+    notas: str = ""
+    tiempo_estimado_dias: int = 0

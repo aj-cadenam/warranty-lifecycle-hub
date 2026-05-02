@@ -6,8 +6,10 @@ import { ApproveModal, RejectModal } from './ApprovalModal'
 import { useAprobarBorrador, useRechazarBorrador, useEditarBorrador } from '../../hooks/useBorradores'
 
 function formatDate(dateStr: string): string {
+  if (!dateStr) return '—'
   try {
-    const date = new Date(dateStr)
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T00:00`
+    const date = new Date(normalized)
     return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
   } catch {
     return dateStr

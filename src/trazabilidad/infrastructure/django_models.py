@@ -9,6 +9,8 @@ class EventoTrazabilidadModel(models.Model):
     responsable = models.CharField(max_length=200)
     timestamp = models.DateTimeField()
     metodo_registro = models.CharField(max_length=50, default="manual")
+    notas = models.TextField(blank=True, default="")
+    tiempo_estimado_dias = models.IntegerField(default=0)
 
     class Meta:
         app_label = "trazabilidad"

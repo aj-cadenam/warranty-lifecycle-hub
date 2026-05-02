@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import type { ChatRequest } from '../types'
 
 export function useSolicitudes() {
   return useQuery({
@@ -55,5 +56,11 @@ export function useProcesarDocumento() {
 export function useBuscarSimilares() {
   return useMutation({
     mutationFn: api.buscarSimilares,
+  })
+}
+
+export function useChatAgente() {
+  return useMutation({
+    mutationFn: (payload: ChatRequest) => api.chatAgente(payload),
   })
 }

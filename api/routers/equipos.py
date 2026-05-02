@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 from src.equipos.domain.entities import TipoEquipo, EstadoEquipo, EstadoGarantia
 from src.equipos.application.registrar_equipo import RegistrarEquipo
-from config.dependencies import get_equipo_repo, get_garantia_repo
+from config.dependencies import get_equipo_repo, get_garantia_repo, get_trazabilidad_repo
 
 router = APIRouter()
 
@@ -66,6 +66,29 @@ def obtener_garantia_vigente(serial: str, garantia_repo=Depends(get_garantia_rep
     return GarantiaResponse(id=garantia.id, equipo_id=garantia.equipo_id,
                              fecha_inicio=garantia.fecha_inicio, fecha_fin=garantia.fecha_fin,
                              tipo_cobertura=garantia.tipo_cobertura, estado=garantia.estado)
+
+
+class TrazabilidadResponse(BaseModel):
+    id: str
+    equipo_id: str
+    solicitud_id: str
+    ubicacion_anterior: str
+    ubicacion_nueva: str
+    metodo_registro: str
+    timestamp: datetime
+
+
+@router.get("/{serial}/trazabilidad", response_model=list[TrazabilidadResponse])
+def obtener_trazabilidad(serial: str, trazabilidad_repo=Depends(get_trazabilidad_repo)):
+    eventos = trazabilidad_repo.find_by_equipo(serial)
+    return [
+        TrazabilidadResponse(
+            id=e.id, equipo_id=e.equipo_id, solicitud_id=e.solicitud_id,
+            ubicacion_anterior=e.ubicacion_anterior, ubicacion_nueva=e.ubicacion_nueva,
+            metodo_registro=e.metodo_registro.value, timestamp=e.timestamp,
+        )
+        for e in eventos
+    ]
 
 
 @router.get("/{serial}", response_model=EquipoResponse)
