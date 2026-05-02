@@ -60,3 +60,13 @@ def listar_solicitudes(repo=Depends(get_solicitud_repo)):
                                descripcion_falla=s.descripcion_falla, estado=s.estado,
                                fecha_reporte=s.fecha_reporte)
             for s in repo.find_all()]
+
+
+@router.get("/{solicitud_id}", response_model=SolicitudResponse)
+def obtener_solicitud(solicitud_id: str, repo=Depends(get_solicitud_repo)):
+    s = repo.find_by_id(solicitud_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="solicitud no encontrada")
+    return SolicitudResponse(id=s.id, equipo_id=s.equipo_id, reportado_por=s.reportado_por,
+                              descripcion_falla=s.descripcion_falla, estado=s.estado,
+                              fecha_reporte=s.fecha_reporte)

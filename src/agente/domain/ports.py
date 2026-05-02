@@ -22,6 +22,13 @@ class EmbeddingPort(ABC):
     def embed(self, text: str) -> list[float]: ...
 
 
+class VectorStorePort(ABC):
+    @abstractmethod
+    def store(self, chunks: list, embeddings: list[list[float]]) -> None: ...
+    @abstractmethod
+    def search(self, query_embedding: list[float], limit: int = 5) -> list[dict]: ...
+
+
 class EmailPort(ABC):
     @abstractmethod
     def send(self, to: str, subject: str, body: str) -> None: ...

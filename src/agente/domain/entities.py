@@ -4,11 +4,11 @@ from typing import Any
 
 
 class Accion(str, Enum):
-    CREAR_SOLICITUD = "crear_solicitud"
-    ACTUALIZAR_ESTADO = "actualizar_estado"
-    NOTIFICAR = "notificar"
-    ESCALAR = "escalar"
-    IGNORAR = "ignorar"
+    CREAR_SOLICITUD = "CREAR_SOLICITUD"
+    ACTUALIZAR_ESTADO = "ACTUALIZAR_ESTADO"
+    NOTIFICAR = "NOTIFICAR"
+    ESCALAR = "ESCALAR"
+    IGNORAR = "IGNORAR"
 
 
 @dataclass

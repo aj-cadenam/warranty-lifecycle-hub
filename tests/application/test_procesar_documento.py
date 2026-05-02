@@ -2,6 +2,7 @@ from src.agente.application.procesar_documento import ProcesarDocumento
 from src.agente.infrastructure.ocr.fake_ocr_adapter import FakeOCRAdapter
 from src.agente.infrastructure.llm.fake_llm_adapter import FakeLLMAdapter
 from src.agente.infrastructure.embeddings.fake_embedding_adapter import FakeEmbeddingAdapter
+from src.agente.infrastructure.vector_store import FakeVectorStoreAdapter
 from src.solicitudes.application.crear_solicitud import CrearSolicitud
 from tests.application.fakes import FakeSolicitudRepository, FakeGarantiaRepository, FakeEquipoRepository
 from src.equipos.domain.entities import Equipo, Garantia, TipoEquipo
@@ -29,12 +30,13 @@ def test_procesar_documento_crea_solicitud():
         ocr=FakeOCRAdapter(),
         llm=FakeLLMAdapter(),
         embedding=FakeEmbeddingAdapter(),
+        vector_store=FakeVectorStoreAdapter(),
         crear_solicitud=CrearSolicitud(solicitud_repo=solicitud_repo, garantia_repo=garantia_repo),
     )
 
-    resultado = caso_uso.execute(pdf_path="fixtures/pdfs/acta_entrega_kyocera_001.pdf")
+    decision, solicitud = caso_uso.execute(pdf_path="fixtures/pdfs/acta_entrega_kyocera_001.pdf")
 
-    assert resultado.accion == "crear_solicitud"
+    assert decision.accion == "CREAR_SOLICITUD"
     solicitudes = solicitud_repo.find_all()
     assert len(solicitudes) == 1
     assert "C3100" in solicitudes[0].descripcion_falla

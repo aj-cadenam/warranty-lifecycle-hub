@@ -13,6 +13,9 @@ class ActualizarEstado:
         _METODOS = {
             EstadoSolicitud.VALIDADA: solicitud.validar,
             EstadoSolicitud.DESPACHADA: solicitud.despachar,
+            EstadoSolicitud.EN_REPARACION: solicitud.iniciar_reparacion,
+            EstadoSolicitud.DEVUELTA: solicitud.devolver,
+            EstadoSolicitud.CERRADA: solicitud.cerrar,
         }
         metodo = _METODOS.get(nuevo_estado)
         if metodo is None:

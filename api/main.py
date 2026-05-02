@@ -19,9 +19,11 @@ def health():
 
 
 def _register_routers():
-    from api.routers import equipos, solicitudes, borradores, agente, notificaciones
+    from api.routers import equipos, garantias, solicitudes, trazabilidad, borradores, agente, notificaciones
     app.include_router(equipos.router, prefix="/equipos", tags=["equipos"])
+    app.include_router(garantias.router, prefix="/garantias", tags=["garantias"])
     app.include_router(solicitudes.router, prefix="/solicitudes", tags=["solicitudes"])
+    app.include_router(trazabilidad.router, prefix="/trazabilidad", tags=["trazabilidad"])
     app.include_router(borradores.router, prefix="/borradores", tags=["borradores"])
     app.include_router(agente.router, prefix="/agente", tags=["agente"])
     app.include_router(notificaciones.router, prefix="/notificaciones", tags=["notificaciones"])

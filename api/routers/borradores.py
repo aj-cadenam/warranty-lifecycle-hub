@@ -49,17 +49,20 @@ def obtener_borrador(borrador_id: str, repo=Depends(get_borrador_repo)):
                              cuerpo=b.cuerpo, estado=b.estado, aprobado_por=b.aprobado_por)
 
 
-@router.patch("/{borrador_id}")
+@router.patch("/{borrador_id}", response_model=BorradorResponse)
 def editar_borrador(borrador_id: str, data: EditarBorradorRequest, repo=Depends(get_borrador_repo)):
     b = repo.find_by_id(borrador_id)
     if not b:
         raise HTTPException(status_code=404, detail="borrador no encontrado")
     b.cuerpo = data.cuerpo
     repo.save(b)
-    return {"ok": True}
+    b = repo.find_by_id(borrador_id)
+    return BorradorResponse(id=b.id, solicitud_id=b.solicitud_id,
+                             destinatario_email=b.destinatario_email, asunto=b.asunto,
+                             cuerpo=b.cuerpo, estado=b.estado, aprobado_por=b.aprobado_por)
 
 
-@router.post("/{borrador_id}/aprobar")
+@router.post("/{borrador_id}/aprobar", response_model=BorradorResponse)
 def aprobar_borrador(borrador_id: str, data: AprobarRequest,
                      repo=Depends(get_borrador_repo), email=Depends(get_email_adapter)):
     try:
@@ -67,13 +70,19 @@ def aprobar_borrador(borrador_id: str, data: AprobarRequest,
             borrador_id=borrador_id, aprobado_por=data.aprobado_por)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"ok": True, "mensaje": "Correo enviado"}
+    b = repo.find_by_id(borrador_id)
+    return BorradorResponse(id=b.id, solicitud_id=b.solicitud_id,
+                             destinatario_email=b.destinatario_email, asunto=b.asunto,
+                             cuerpo=b.cuerpo, estado=b.estado, aprobado_por=b.aprobado_por)
 
 
-@router.post("/{borrador_id}/rechazar")
+@router.post("/{borrador_id}/rechazar", response_model=BorradorResponse)
 def rechazar_borrador(borrador_id: str, data: RechazarRequest, repo=Depends(get_borrador_repo)):
     try:
         RechazarBorrador(borrador_repo=repo).execute(borrador_id=borrador_id, motivo=data.motivo)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"ok": True, "mensaje": "Borrador rechazado"}
+    b = repo.find_by_id(borrador_id)
+    return BorradorResponse(id=b.id, solicitud_id=b.solicitud_id,
+                             destinatario_email=b.destinatario_email, asunto=b.asunto,
+                             cuerpo=b.cuerpo, estado=b.estado, aprobado_por=b.aprobado_por)

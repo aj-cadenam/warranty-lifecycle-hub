@@ -56,3 +56,8 @@ def get_embedding_adapter():
 
 def get_ocr_adapter() -> FakeOCRAdapter:
     return FakeOCRAdapter()
+
+
+def get_vector_store():
+    from src.agente.infrastructure.vector_store import PgVectorStoreAdapter
+    return PgVectorStoreAdapter()

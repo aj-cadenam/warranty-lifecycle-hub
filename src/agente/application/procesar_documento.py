@@ -1,7 +1,9 @@
-from src.agente.domain.ports import OCRPort, LLMPort, EmbeddingPort
-from src.agente.domain.entities import DecisionAgente
+from typing import Optional, Tuple
+from src.agente.domain.ports import OCRPort, LLMPort, EmbeddingPort, VectorStorePort
+from src.agente.domain.entities import DecisionAgente, Accion
 from src.agente.infrastructure.chunking import ChunkingService
 from src.solicitudes.application.crear_solicitud import CrearSolicitud
+from src.solicitudes.domain.entities import SolicitudGarantia
 
 
 class ProcesarDocumento:
@@ -10,6 +12,7 @@ class ProcesarDocumento:
         ocr: OCRPort,
         llm: LLMPort,
         embedding: EmbeddingPort,
+        vector_store: VectorStorePort,
         crear_solicitud: CrearSolicitud,
         chunk_size: int = 800,
         overlap: int = 100,
@@ -17,23 +20,33 @@ class ProcesarDocumento:
         self._ocr = ocr
         self._llm = llm
         self._embedding = embedding
+        self._vector_store = vector_store
         self._crear_solicitud = crear_solicitud
         self._chunker = ChunkingService(chunk_size=chunk_size, overlap=overlap)
 
-    def execute(self, pdf_path: str) -> DecisionAgente:
+    def execute(self, pdf_path: str, extra_metadata: dict | None = None) -> Tuple[DecisionAgente, Optional[SolicitudGarantia]]:
         texto = self._ocr.extract_text(pdf_path)
-        chunks = self._chunker.chunk(texto, metadata={"pdf_path": pdf_path})
-        for chunk in chunks:
-            self._embedding.embed(chunk.text)
+        base_meta = {"pdf_path": pdf_path, **(extra_metadata or {})}
+        chunks = self._chunker.chunk(texto, metadata=base_meta)
+        embeddings = [self._embedding.embed(chunk.text) for chunk in chunks]
 
         decision = self._llm.decide(context=texto)
+        solicitud_creada: Optional[SolicitudGarantia] = None
 
-        if decision.accion.value == "crear_solicitud":
+        if decision.accion == Accion.CREAR_SOLICITUD:
             params = decision.parametros
-            self._crear_solicitud.execute(
-                equipo_id=params.get("equipo_serial", ""),
-                reportado_por=params.get("reportado_por", "Agente OCR"),
-                descripcion_falla=params.get("descripcion_falla", texto[:500]),
-            )
+            try:
+                solicitud_creada = self._crear_solicitud.execute(
+                    equipo_id=params.get("equipo_serial", ""),
+                    reportado_por=params.get("reportado_por", "Agente OCR"),
+                    descripcion_falla=params.get("descripcion_falla", texto[:500]),
+                )
+                # Enrich chunk metadata with solicitud_id and equipo_serial for RAG retrieval
+                for chunk in chunks:
+                    chunk.metadata["solicitud_id"] = solicitud_creada.id
+                    chunk.metadata["equipo_serial"] = solicitud_creada.equipo_id
+            except ValueError:
+                pass
 
-        return decision
+        self._vector_store.store(chunks, embeddings)
+        return decision, solicitud_creada

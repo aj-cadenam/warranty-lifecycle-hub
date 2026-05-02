@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
+from datetime import date
+from src.solicitudes.domain.entities import EstadoSolicitud
 from config.dependencies import (
     get_llm_adapter,
     get_embedding_adapter,
@@ -9,6 +11,7 @@ from config.dependencies import (
     get_trazabilidad_repo,
     get_borrador_repo,
     get_evento_seguimiento_repo,
+    get_vector_store,
 )
 from config.settings import settings
 from src.agente.application.procesar_documento import ProcesarDocumento
@@ -22,19 +25,75 @@ class ProcesarDocumentoRequest(BaseModel):
     pdf_path: str
 
 
+class SolicitudBrief(BaseModel):
+    id: str
+    equipo_id: str
+    descripcion_falla: str
+    estado: EstadoSolicitud
+    fecha_reporte: date
+
+
+def _procesar_pdf(pdf_path: str, ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo):
+    crear_solicitud = CrearSolicitud(solicitud_repo=solicitud_repo, garantia_repo=garantia_repo)
+    caso_uso = ProcesarDocumento(
+        ocr=ocr, llm=llm, embedding=embedding,
+        vector_store=vector_store, crear_solicitud=crear_solicitud,
+    )
+    return caso_uso.execute(pdf_path=pdf_path)
+
+
 @router.post("/procesar-documento")
 def procesar_documento(
     data: ProcesarDocumentoRequest,
     ocr=Depends(get_ocr_adapter),
     llm=Depends(get_llm_adapter),
     embedding=Depends(get_embedding_adapter),
+    vector_store=Depends(get_vector_store),
     solicitud_repo=Depends(get_solicitud_repo),
     garantia_repo=Depends(get_garantia_repo),
 ):
-    crear_solicitud = CrearSolicitud(solicitud_repo=solicitud_repo, garantia_repo=garantia_repo)
-    caso_uso = ProcesarDocumento(ocr=ocr, llm=llm, embedding=embedding, crear_solicitud=crear_solicitud)
-    decision = caso_uso.execute(pdf_path=data.pdf_path)
-    return {"accion": decision.accion, "confianza": decision.confianza, "razonamiento": decision.razonamiento}
+    decision, solicitud = _procesar_pdf(
+        data.pdf_path, ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo
+    )
+    solicitud_data = None
+    if solicitud:
+        solicitud_data = SolicitudBrief(
+            id=solicitud.id,
+            equipo_id=solicitud.equipo_id,
+            descripcion_falla=solicitud.descripcion_falla,
+            estado=solicitud.estado,
+            fecha_reporte=solicitud.fecha_reporte,
+        )
+    return {
+        "accion": decision.accion,
+        "confianza": decision.confianza,
+        "razonamiento": decision.razonamiento,
+        "solicitud_creada": solicitud_data,
+    }
+
+
+@router.post("/ingestar-fixtures")
+def ingestar_fixtures(
+    ocr=Depends(get_ocr_adapter),
+    llm=Depends(get_llm_adapter),
+    embedding=Depends(get_embedding_adapter),
+    vector_store=Depends(get_vector_store),
+    solicitud_repo=Depends(get_solicitud_repo),
+    garantia_repo=Depends(get_garantia_repo),
+):
+    """Procesa todos los PDFs de fixtures/ e indexa sus chunks en pgvector."""
+    from pathlib import Path
+    pdfs = list(Path("fixtures/pdfs").glob("*.pdf"))
+    resultados = []
+    for pdf in pdfs:
+        try:
+            _, solicitud = _procesar_pdf(
+                str(pdf), ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo
+            )
+            resultados.append({"pdf": pdf.name, "ok": True, "solicitud_id": solicitud.id if solicitud else None})
+        except Exception as e:
+            resultados.append({"pdf": pdf.name, "ok": False, "error": str(e)})
+    return {"ingestados": len([r for r in resultados if r["ok"]]), "detalle": resultados}
 
 
 @router.post("/verificar-semanal")
@@ -53,5 +112,38 @@ def verificar_estado_semanal(
         llm=llm,
         timeout_proveedor_dias=settings.TIMEOUT_PROVEEDOR_DIAS,
     )
-    caso_uso.execute()
-    return {"ok": True, "mensaje": "Verificación completada"}
+    return caso_uso.execute()
+
+
+@router.get("/buscar-similares")
+def buscar_similares(
+    q: str = Query(default="", min_length=0),
+    embedding=Depends(get_embedding_adapter),
+    vector_store=Depends(get_vector_store),
+    solicitud_repo=Depends(get_solicitud_repo),
+):
+    if not q.strip():
+        return {"resultados": [], "query": q}
+
+    query_emb = embedding.embed(q)
+    chunks = vector_store.search(query_emb, limit=10)
+
+    seen_ids: set[str] = set()
+    resultados = []
+    for chunk in chunks:
+        sid = chunk.get("metadata", {}).get("solicitud_id") if isinstance(chunk.get("metadata"), dict) else None
+        if not sid or sid in seen_ids:
+            continue
+        seen_ids.add(sid)
+        solicitud = solicitud_repo.find_by_id(str(sid))
+        if solicitud:
+            resultados.append({
+                "id": solicitud.id,
+                "equipo_id": solicitud.equipo_id,
+                "descripcion_falla": solicitud.descripcion_falla,
+                "estado": solicitud.estado,
+                "fecha_reporte": str(solicitud.fecha_reporte),
+                "similitud": round(chunk.get("similarity", 0), 3),
+            })
+
+    return {"resultados": resultados, "query": q}

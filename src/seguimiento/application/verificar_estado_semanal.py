@@ -28,16 +28,21 @@ class VerificarEstadoSemanal:
         self._timeout = timeout_proveedor_dias
         self._proveedor_email = proveedor_email
 
-    def execute(self) -> None:
+    def execute(self) -> dict:
         estados_activos = [EstadoSolicitud.DESPACHADA, EstadoSolicitud.EN_REPARACION]
+        solicitudes_verificadas = 0
+        borradores_generados = 0
         for estado in estados_activos:
             for solicitud in self._solicitudes.find_by_estado(estado):
-                self._verificar_solicitud(solicitud)
+                if self._verificar_solicitud(solicitud):
+                    borradores_generados += 1
+                solicitudes_verificadas += 1
+        return {"solicitudes_verificadas": solicitudes_verificadas, "borradores_generados": borradores_generados}
 
-    def _verificar_solicitud(self, solicitud) -> None:
+    def _verificar_solicitud(self, solicitud) -> bool:
         ultimo_evento = self._trazabilidad.find_ultimo_evento(solicitud.id)
         if not ultimo_evento:
-            return
+            return False
 
         dias_sin_respuesta = (datetime.now() - ultimo_evento.timestamp).days
 
@@ -50,13 +55,13 @@ class VerificarEstadoSemanal:
         self._seguimiento.save(evento)
 
         if dias_sin_respuesta < self._timeout:
-            return
+            return False
 
         borrador_existente = self._borradores.find_by_solicitud_y_estado(
             solicitud.id, EstadoBorrador.PENDIENTE_APROBACION
         )
         if borrador_existente:
-            return
+            return False
 
         contexto = (
             f"Solicitud {solicitud.id} para equipo {solicitud.equipo_id}. "
@@ -73,3 +78,4 @@ class VerificarEstadoSemanal:
             cuerpo=email_data["cuerpo"],
         )
         self._borradores.save(borrador)
+        return True
