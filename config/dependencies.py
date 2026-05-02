@@ -54,7 +54,10 @@ def get_embedding_adapter():
     return FakeEmbeddingAdapter(dim=settings.EMBEDDING_DIM)
 
 
-def get_ocr_adapter() -> FakeOCRAdapter:
+def get_ocr_adapter():
+    if settings.OCR_BACKEND == "gemini":
+        from src.agente.infrastructure.ocr.gemini_ocr_adapter import GeminiOCRAdapter
+        return GeminiOCRAdapter(api_key=settings.GEMINI_API_KEY)
     return FakeOCRAdapter()
 
 
