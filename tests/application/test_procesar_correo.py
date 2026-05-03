@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from src.agente.application.procesar_correo import ProcesarCorreo
-from src.agente.domain.entities import CorreoEntrante, DecisionCorreo, TipoCorreo, DecisionAgente, Accion
+from src.agente.domain.entities import CorreoEntrante, DecisionCorreo, TipoCorreo, DecisionAgente, Accion, RespuestaChat
 from src.agente.domain.ports import LLMPort, EmailReaderPort
 from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
 from src.agente.infrastructure.embeddings.fake_embedding_adapter import FakeEmbeddingAdapter
@@ -32,6 +32,9 @@ class StubLLMAdapter(LLMPort):
 
     def classify_email(self, asunto: str, cuerpo: str) -> DecisionCorreo:
         return self._decision
+
+    def chat(self, mensaje: str, contexto: dict) -> RespuestaChat:
+        return RespuestaChat(respuesta="Stub")
 
 
 def _correo(uid: str = "uid-1", asunto: str = "Asunto", cuerpo: str = "Cuerpo",
