@@ -27,7 +27,7 @@ class FakeLLMAdapter(LLMPort):
 
     def classify_email(self, asunto: str, cuerpo: str) -> DecisionCorreo:
         texto = (asunto + " " + cuerpo).lower()
-        match = re.search(r"([A-Z]{2,4}-[A-Z]+-\d{4}-\d{3})", asunto + " " + cuerpo)
+        match = re.search(r"([A-Z]{2,4}-[A-Za-z]+-\d{4}-\d{3})", asunto + " " + cuerpo)
         serial = match.group(1) if match else ""
 
         if any(w in texto for w in ["acta", "entrega", "falla", "adjunto"]):
@@ -39,6 +39,9 @@ class FakeLLMAdapter(LLMPort):
         if any(w in texto for w in ["despachamos", "enviamos", "guía", "tracking"]):
             return DecisionCorreo(tipo=TipoCorreo.CONFIRMACION_DESPACHO, confianza=0.95,
                                   equipo_serial=serial, razonamiento="[FAKE] confirmación de despacho")
+        if any(w in texto for w in ["listo para retiro", "reparado listo", "listo para recoger"]):
+            return DecisionCorreo(tipo=TipoCorreo.CONFIRMACION_DEVOLUCION, confianza=0.95,
+                                  equipo_serial=serial, razonamiento="[FAKE] confirmación de devolución")
         if any(w in texto for w in ["estado", "cuándo", "cuando", "consulta"]):
             return DecisionCorreo(tipo=TipoCorreo.CONSULTA_CLIENTE, confianza=0.90,
                                   equipo_serial=serial, razonamiento="[FAKE] consulta de cliente")
