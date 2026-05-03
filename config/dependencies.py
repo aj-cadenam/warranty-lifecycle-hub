@@ -79,3 +79,15 @@ def get_ocr_adapter():
 def get_vector_store():
     from src.agente.infrastructure.vector_store import PgVectorStoreAdapter
     return PgVectorStoreAdapter()
+
+
+def get_orquestar_acciones():
+    from src.agente.application.orquestar_acciones import OrquestarAcciones
+    return OrquestarAcciones(
+        llm=get_llm_adapter(),
+        borrador_repo=get_borrador_repo(),
+        responsable_email=settings.RESPONSABLE_GARANTIAS_EMAIL,
+        bodega_email=settings.BODEGA_EMAIL,
+        despacho_email=settings.DESPACHO_EMAIL,
+        recepcion_email=settings.RECEPCION_EMAIL,
+    )

@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     EMAIL_IMAP_FOLDER: str = "INBOX"
     EMAIL_POLLING_INTERVAL_MINUTES: int = 5
 
+    # Internal contacts — set these in .env for production
+    RESPONSABLE_GARANTIAS_EMAIL: str = "responsable@datecsa.com"
+    BODEGA_EMAIL: str = "bodega@datecsa.com"
+    DESPACHO_EMAIL: str = "despacho@datecsa.com"
+    RECEPCION_EMAIL: str = "recepcion@datecsa.com"
+
     LANGFUSE_HOST: str = "https://cloud.langfuse.com"
     LANGFUSE_PUBLIC_KEY: str = ""
     LANGFUSE_SECRET_KEY: str = ""

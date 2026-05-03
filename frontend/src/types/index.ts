@@ -60,16 +60,16 @@ export interface EventoTrazabilidad {
 export interface BorradorCorreo {
   id: string
   solicitud_id: string
-  destinatario_tipo: string
+  destinatario_tipo: 'proveedor' | 'cliente' | 'responsable' | 'bodega' | 'despacho' | 'recepcion'
   destinatario_email: string
   asunto: string
   cuerpo: string
   estado: EstadoBorrador
   aprobado_por?: string
   fecha_aprobacion?: string
-  created_at: string
-  solicitud?: SolicitudGarantia
-  dias_sin_respuesta?: number
+  motivo_rechazo?: string
+  dias_sin_respuesta: number
+  created_at?: string
 }
 
 export interface VerificarSemanalResult {

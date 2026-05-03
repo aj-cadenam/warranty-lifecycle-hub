@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from pydantic import BaseModel
 from datetime import date
+import tempfile
+import os
 from src.solicitudes.domain.entities import EstadoSolicitud
 from config.dependencies import (
     get_llm_adapter,
@@ -13,6 +15,7 @@ from config.dependencies import (
     get_evento_seguimiento_repo,
     get_vector_store,
     get_email_reader,
+    get_orquestar_acciones,
 )
 from config.settings import settings
 from src.agente.application.procesar_documento import ProcesarDocumento
@@ -41,6 +44,43 @@ def _procesar_pdf(pdf_path: str, ocr, llm, embedding, vector_store, solicitud_re
         vector_store=vector_store, crear_solicitud=crear_solicitud,
     )
     return caso_uso.execute(pdf_path=pdf_path)
+
+
+@router.post("/procesar-documento/upload")
+def procesar_documento_upload(
+    file: UploadFile = File(...),
+    ocr=Depends(get_ocr_adapter),
+    llm=Depends(get_llm_adapter),
+    embedding=Depends(get_embedding_adapter),
+    vector_store=Depends(get_vector_store),
+    solicitud_repo=Depends(get_solicitud_repo),
+    garantia_repo=Depends(get_garantia_repo),
+):
+    suffix = os.path.splitext(file.filename or "doc.pdf")[1] or ".pdf"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(file.file.read())
+        tmp_path = tmp.name
+    try:
+        decision, solicitud = _procesar_pdf(
+            tmp_path, ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo
+        )
+    finally:
+        os.unlink(tmp_path)
+    solicitud_data = None
+    if solicitud:
+        solicitud_data = SolicitudBrief(
+            id=solicitud.id,
+            equipo_id=solicitud.equipo_id,
+            descripcion_falla=solicitud.descripcion_falla,
+            estado=solicitud.estado,
+            fecha_reporte=solicitud.fecha_reporte,
+        )
+    return {
+        "accion": decision.accion,
+        "confianza": decision.confianza,
+        "razonamiento": decision.razonamiento,
+        "solicitud_creada": solicitud_data,
+    }
 
 
 @router.post("/procesar-documento")
@@ -160,6 +200,7 @@ def procesar_correos(
     solicitud_repo=Depends(get_solicitud_repo),
     garantia_repo=Depends(get_garantia_repo),
     trazabilidad_repo=Depends(get_trazabilidad_repo),
+    orquestar=Depends(get_orquestar_acciones),
 ):
     from src.agente.application.procesar_correo import ProcesarCorreo
     from src.solicitudes.application.crear_solicitud import CrearSolicitud
@@ -173,6 +214,7 @@ def procesar_correos(
         solicitud_repo=solicitud_repo,
         trazabilidad_repo=trazabilidad_repo,
         crear_solicitud=CrearSolicitud(solicitud_repo=solicitud_repo, garantia_repo=garantia_repo),
+        orquestar=orquestar,
     )
     return caso_uso.execute()
 

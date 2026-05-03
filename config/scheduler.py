@@ -8,6 +8,7 @@ def _run_procesar_correos() -> None:
         get_llm_adapter, get_email_reader, get_ocr_adapter,
         get_embedding_adapter, get_vector_store,
         get_solicitud_repo, get_garantia_repo, get_trazabilidad_repo,
+        get_orquestar_acciones,
     )
     from src.agente.application.procesar_correo import ProcesarCorreo
     from src.solicitudes.application.crear_solicitud import CrearSolicitud
@@ -25,6 +26,7 @@ def _run_procesar_correos() -> None:
             solicitud_repo=solicitud_repo,
             garantia_repo=get_garantia_repo(),
         ),
+        orquestar=get_orquestar_acciones(),
     )
     result = caso_uso.execute()
     if result["procesados"] > 0:
