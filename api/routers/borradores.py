@@ -31,6 +31,7 @@ class BorradorResponse(BaseModel):
     cuerpo: str
     estado: EstadoBorrador
     aprobado_por: Optional[str] = None
+    motivo_rechazo: Optional[str] = None
     fecha_aprobacion: Optional[datetime] = None
     dias_sin_respuesta: int = 0
 
@@ -45,6 +46,7 @@ def _to_response(b) -> BorradorResponse:
         cuerpo=b.cuerpo,
         estado=b.estado,
         aprobado_por=b.aprobado_por,
+        motivo_rechazo=b.motivo_rechazo,
         fecha_aprobacion=b.fecha_aprobacion,
         dias_sin_respuesta=b.dias_sin_respuesta,
     )
@@ -71,6 +73,8 @@ def editar_borrador(borrador_id: str, data: EditarBorradorRequest, repo=Depends(
     b.cuerpo = data.cuerpo
     repo.save(b)
     b = repo.find_by_id(borrador_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="borrador no encontrado")
     return _to_response(b)
 
 
@@ -83,6 +87,8 @@ def aprobar_borrador(borrador_id: str, data: AprobarRequest,
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     b = repo.find_by_id(borrador_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="borrador no encontrado")
     return _to_response(b)
 
 
@@ -93,4 +99,6 @@ def rechazar_borrador(borrador_id: str, data: RechazarRequest, repo=Depends(get_
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     b = repo.find_by_id(borrador_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="borrador no encontrado")
     return _to_response(b)
