@@ -14,7 +14,8 @@ class DjangoBorradorCorreoRepository(BorradorCorreoRepository):
                           destinatario_email=b.destinatario_email, asunto=b.asunto,
                           cuerpo=b.cuerpo,
                           estado=b.estado.value, aprobado_por=b.aprobado_por,
-                          motivo_rechazo=b.motivo_rechazo, fecha_aprobacion=b.fecha_aprobacion),
+                          motivo_rechazo=b.motivo_rechazo, fecha_aprobacion=b.fecha_aprobacion,
+                          dias_sin_respuesta=b.dias_sin_respuesta),
         )
         if created:
             b.id = str(obj.id)
@@ -43,7 +44,8 @@ class DjangoBorradorCorreoRepository(BorradorCorreoRepository):
                            destinatario_tipo=DestinatarioTipo(m.destinatario_tipo),
                            destinatario_email=m.destinatario_email, asunto=m.asunto, cuerpo=m.cuerpo,
                            estado=EstadoBorrador(m.estado), aprobado_por=m.aprobado_por,
-                           motivo_rechazo=m.motivo_rechazo, fecha_aprobacion=m.fecha_aprobacion)
+                           motivo_rechazo=m.motivo_rechazo, fecha_aprobacion=m.fecha_aprobacion,
+                           dias_sin_respuesta=m.dias_sin_respuesta)
         return b
 
 

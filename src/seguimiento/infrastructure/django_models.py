@@ -11,6 +11,7 @@ class BorradorCorreoModel(models.Model):
     aprobado_por = models.EmailField(blank=True, null=True)
     motivo_rechazo = models.TextField(blank=True, null=True)
     fecha_aprobacion = models.DateTimeField(blank=True, null=True)
+    dias_sin_respuesta = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
