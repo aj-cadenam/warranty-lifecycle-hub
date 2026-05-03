@@ -1,4 +1,7 @@
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:
+    from src.agente.application.orquestar_acciones import OrquestarAcciones
 from langfuse import observe
 from src.agente.domain.entities import CorreoEntrante, DecisionCorreo, TipoCorreo
 from src.agente.domain.ports import LLMPort, EmailReaderPort, OCRPort, EmbeddingPort, VectorStorePort
@@ -30,7 +33,7 @@ class ProcesarCorreo:
         solicitud_repo: SolicitudRepository,
         trazabilidad_repo: TrazabilidadRepository,
         crear_solicitud: CrearSolicitud,
-        orquestar=None,  # OrquestarAcciones | None — optional to keep backwards compat
+        orquestar: "OrquestarAcciones | None" = None,
     ):
         self._llm = llm
         self._email_reader = email_reader
