@@ -76,6 +76,7 @@ class VerificarEstadoSemanal:
             destinatario_email=self._proveedor_email,
             asunto=email_data["asunto"],
             cuerpo=email_data["cuerpo"],
+            dias_sin_respuesta=dias_sin_respuesta,
         )
         self._borradores.save(borrador)
         return True
