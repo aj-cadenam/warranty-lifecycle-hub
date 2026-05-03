@@ -15,6 +15,10 @@ class EstadoBorrador(str, Enum):
 class DestinatarioTipo(str, Enum):
     PROVEEDOR = "proveedor"
     CLIENTE = "cliente"
+    RESPONSABLE = "responsable"
+    BODEGA = "bodega"
+    DESPACHO = "despacho"
+    RECEPCION = "recepcion"
 
 
 @dataclass
@@ -28,6 +32,7 @@ class BorradorCorreo(BaseEntity):
     aprobado_por: Optional[str] = None
     motivo_rechazo: Optional[str] = None
     fecha_aprobacion: Optional[datetime] = None
+    dias_sin_respuesta: int = 0
 
     def aprobar(self, aprobado_por: str) -> None:
         if self.estado == EstadoBorrador.ENVIADO:

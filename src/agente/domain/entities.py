@@ -17,6 +17,7 @@ class TipoCorreo(str, Enum):
     ACTUALIZACION_PROVEEDOR = "actualizacion_proveedor"
     CONSULTA_CLIENTE = "consulta_cliente"
     CONFIRMACION_DESPACHO = "confirmacion_despacho"
+    CONFIRMACION_DEVOLUCION = "confirmacion_devolucion"
     OTRO = "otro"
 
 
