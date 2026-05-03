@@ -78,14 +78,22 @@ class GeminiLLMAdapter(LLMPort):
 Eres un agente de gestión de garantías para Datecsa S.A.
 Clasifica el siguiente correo y responde SOLO con JSON válido (sin bloques markdown):
 {{
-  "tipo": "acta_entrega" | "actualizacion_proveedor" | "consulta_cliente" | "confirmacion_despacho" | "otro",
+  "tipo": "acta_entrega" | "actualizacion_proveedor" | "consulta_cliente" | "confirmacion_despacho" | "confirmacion_devolucion" | "otro",
   "confianza": float 0-1,
   "equipo_serial": "serial del equipo si se menciona, sino vacío",
-  "nuevo_estado": "estado sugerido para la solicitud si aplica, sino vacío",
+  "nuevo_estado": "en_reparacion si confirmacion_despacho | devuelta si confirmacion_devolucion | sino vacío",
   "tiempo_estimado_dias": 0,
   "informacion_adicional": "datos relevantes extraídos del correo",
   "razonamiento": "por qué clasificaste así"
 }}
+
+Tipos:
+- acta_entrega: el correo adjunta o describe una acta de entrega de un equipo con falla
+- actualizacion_proveedor: el proveedor informa estado de la reparación en curso
+- confirmacion_despacho: el proveedor confirma que recibió el equipo y lo tienen en reparación
+- confirmacion_devolucion: el proveedor confirma que el equipo fue reparado y está listo para ser recogido/enviado de vuelta
+- consulta_cliente: el cliente pregunta por el estado de su garantía
+- otro: cualquier otro tipo de correo no relacionado con garantías
 
 Asunto: {asunto}
 Cuerpo: {cuerpo}

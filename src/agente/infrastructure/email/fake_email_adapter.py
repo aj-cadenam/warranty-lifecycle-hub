@@ -27,6 +27,22 @@ _FAKE_INBOX: list[CorreoEntrante] = [
         adjuntos=[],
         fecha=datetime.now(),
     ),
+    CorreoEntrante(
+        uid="fake-004",
+        asunto="Confirmación recepción equipo - Kyocera KYO-TASKalfa-2021-001",
+        cuerpo="Estimados, confirmamos recepción del equipo Kyocera TASKalfa serial KYO-TASKalfa-2021-001. Estimamos diagnóstico en 3 días hábiles.",
+        remitente="soporte@kyocera.com",
+        adjuntos=[],
+        fecha=datetime.now(),
+    ),
+    CorreoEntrante(
+        uid="fake-005",
+        asunto="Equipo reparado listo para retiro - Barco BAR-CS-2022-014",
+        cuerpo="Estimados, el equipo Barco ClickShare serial BAR-CS-2022-014 ha sido reparado y está listo para retiro o devolución.",
+        remitente="soporte@barco.com",
+        adjuntos=[],
+        fecha=datetime.now(),
+    ),
 ]
 
 
