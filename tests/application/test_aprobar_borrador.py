@@ -18,11 +18,11 @@ def test_aprobar_borrador_envia_correo_y_marca_enviado():
     email_adapter = FakeEmailAdapter()
     borrador = _crear_borrador(repo)
     AprobarBorrador(borrador_repo=repo, email_adapter=email_adapter).execute(
-        borrador_id=borrador.id, aprobado_por="juan@datecsa.com"
+        borrador_id=borrador.id, aprobado_por="juan@datecsafake.com"
     )
     b = repo.find_by_id(borrador.id)
     assert b.estado == EstadoBorrador.ENVIADO
-    assert b.aprobado_por == "juan@datecsa.com"
+    assert b.aprobado_por == "juan@datecsafake.com"
     assert len(email_adapter.sent) == 1
     assert email_adapter.sent[0]["to"] == "soporte@kyocera.co"
 
@@ -42,5 +42,5 @@ def test_aprobar_borrador_inexistente_lanza_error():
     email_adapter = FakeEmailAdapter()
     with pytest.raises(ValueError, match="no encontrado"):
         AprobarBorrador(borrador_repo=repo, email_adapter=email_adapter).execute(
-            borrador_id="no-existe", aprobado_por="juan@datecsa.com"
+            borrador_id="no-existe", aprobado_por="juan@datecsafake.com"
         )

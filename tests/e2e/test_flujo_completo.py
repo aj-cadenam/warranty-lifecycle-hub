@@ -102,7 +102,7 @@ def test_garantia_vigente_del_equipo(equipo, garantia):
 def solicitud(equipo, garantia):
     r = client.post("/solicitudes/", json={
         "equipo_id": equipo["id"],
-        "reportado_por": "javier.cadena@datecsa.com",
+        "reportado_por": "javier.cadena@datecsafake.com",
         "descripcion_falla": "Error de fusor C3100 — el equipo detiene la impresión.",
     })
     assert r.status_code == 201, f"Crear solicitud: {r.text}"
@@ -185,7 +185,7 @@ def solicitud_con_timeout(equipo, garantia):
     # Crear solicitud
     r = client.post("/solicitudes/", json={
         "equipo_id": equipo["id"],
-        "reportado_por": "tecnico@datecsa.com",
+        "reportado_por": "tecnico@datecsafake.com",
         "descripcion_falla": "Test timeout — sin respuesta del proveedor.",
     })
     assert r.status_code == 201
@@ -266,17 +266,17 @@ def test_editar_cuerpo_borrador(borrador_pendiente):
 
 def test_aprobar_borrador(borrador_pendiente):
     r = client.post(f"/borradores/{borrador_pendiente['id']}/aprobar", json={
-        "aprobado_por": "javier.cadena@datecsa.com",
+        "aprobado_por": "javier.cadena@datecsafake.com",
     })
     assert r.status_code == 200
     data = r.json()
     assert data["estado"] == "enviado"
-    assert data["aprobado_por"] == "javier.cadena@datecsa.com"
+    assert data["aprobado_por"] == "javier.cadena@datecsafake.com"
 
 
 def test_borrador_ya_aprobado_no_se_puede_aprobar_de_nuevo(borrador_pendiente):
     r = client.post(f"/borradores/{borrador_pendiente['id']}/aprobar", json={
-        "aprobado_por": "otro@datecsa.com",
+        "aprobado_por": "otro@datecsafake.com",
     })
     assert r.status_code in (400, 422)
 
@@ -373,7 +373,7 @@ def test_flujo_completo_pdf_a_solicitud_a_borrador(equipo, garantia):
 
     # 6. Aprobar el borrador
     bid = pendientes[0]["id"]
-    r5 = client.post(f"/borradores/{bid}/aprobar", json={"aprobado_por": "javier.cadena@datecsa.com"})
+    r5 = client.post(f"/borradores/{bid}/aprobar", json={"aprobado_por": "javier.cadena@datecsafake.com"})
     assert r5.json()["estado"] == "enviado"
 
     # 7. Verificar que se generó una notificación del envío

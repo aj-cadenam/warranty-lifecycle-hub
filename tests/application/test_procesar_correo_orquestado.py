@@ -86,7 +86,7 @@ def test_acta_entrega_genera_borrador_responsable():
         uid="t-001",
         asunto="Acta de entrega - KYO-TASKalfa-2021-001",
         cuerpo="Falla error fusor C3100. Serial: KYO-TASKalfa-2021-001.",
-        remitente="tecnico@datecsa.com",
+        remitente="tecnico@datecsafake.com",
         fecha=datetime.now(),
     )])
     solicitud_repo = FakeSolicitudRepo()
@@ -94,7 +94,7 @@ def test_acta_entrega_genera_borrador_responsable():
     orquestar = OrquestarAcciones(
         llm=FakeLLMAdapter(),
         borrador_repo=borrador_repo,
-        responsable_email="resp@datecsa.com",
+        responsable_email="resp@datecsafake.com",
     )
     caso_uso = ProcesarCorreo(
         llm=FakeLLMAdapter(),
@@ -139,10 +139,10 @@ def test_confirmacion_devolucion_genera_4_borradores():
     orquestar = OrquestarAcciones(
         llm=FakeLLMAdapter(),
         borrador_repo=borrador_repo,
-        responsable_email="resp@datecsa.com",
-        bodega_email="bodega@datecsa.com",
-        despacho_email="despacho@datecsa.com",
-        recepcion_email="recepcion@datecsa.com",
+        responsable_email="resp@datecsafake.com",
+        bodega_email="bodega@datecsafake.com",
+        despacho_email="despacho@datecsafake.com",
+        recepcion_email="recepcion@datecsafake.com",
     )
     caso_uso = ProcesarCorreo(
         llm=FakeLLMAdapter(),

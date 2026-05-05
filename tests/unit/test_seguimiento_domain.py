@@ -21,9 +21,9 @@ def test_aprobar_registra_aprobador():
         asunto="Seguimiento",
         cuerpo="...",
     )
-    b.aprobar(aprobado_por="juan@datecsa.com")
+    b.aprobar(aprobado_por="juan@datecsafake.com")
     assert b.estado == EstadoBorrador.APROBADO
-    assert b.aprobado_por == "juan@datecsa.com"
+    assert b.aprobado_por == "juan@datecsafake.com"
 
 
 def test_marcar_enviado_requiere_aprobacion():
@@ -46,10 +46,10 @@ def test_borrador_ya_enviado_no_se_puede_volver_a_aprobar():
         asunto="Seguimiento",
         cuerpo="...",
     )
-    b.aprobar(aprobado_por="ana@datecsa.com")
+    b.aprobar(aprobado_por="ana@datecsafake.com")
     b.marcar_enviado()
     with pytest.raises(ValueError, match="ya fue enviado"):
-        b.aprobar(aprobado_por="otro@datecsa.com")
+        b.aprobar(aprobado_por="otro@datecsafake.com")
 
 
 def test_rechazar_borrador():
