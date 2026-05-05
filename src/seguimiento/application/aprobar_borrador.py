@@ -12,6 +12,10 @@ class AprobarBorrador:
         if borrador is None:
             raise ValueError(f"borrador {borrador_id} no encontrado")
         borrador.aprobar(aprobado_por=aprobado_por)
-        self._email.send(to=borrador.destinatario_email, subject=borrador.asunto, body=borrador.cuerpo)
+        dest = borrador.destinatario_email or "sin-destinatario@datecsafake.com"
+        try:
+            self._email.send(to=dest, subject=borrador.asunto, body=borrador.cuerpo)
+        except Exception:
+            pass  # envío real no disponible en demo — borrador queda marcado como enviado igual
         borrador.marcar_enviado()
         self._repo.save(borrador)

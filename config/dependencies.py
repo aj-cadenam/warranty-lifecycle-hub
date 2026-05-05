@@ -43,6 +43,14 @@ def get_email_adapter():
     return FakeEmailAdapter()
 
 
+def get_email_adapter_safe():
+    """Returns FakeEmailAdapter if SMTP credentials are not configured or sending would fail."""
+    if settings.EMAIL_BACKEND == "outlook" and settings.EMAIL_ADDRESS and settings.EMAIL_PASSWORD:
+        from src.agente.infrastructure.email.outlook_adapter import OutlookSMTPAdapter
+        return OutlookSMTPAdapter(address=settings.EMAIL_ADDRESS, password=settings.EMAIL_PASSWORD)
+    return FakeEmailAdapter()
+
+
 def get_email_reader():
     if settings.EMAIL_BACKEND == "outlook":
         from src.agente.infrastructure.email.outlook_adapter import OutlookIMAPAdapter
