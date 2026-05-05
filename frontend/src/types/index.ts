@@ -105,6 +105,7 @@ export interface ProcesarDocumentoResult {
   confianza: number
   razonamiento: string
   solicitud_creada?: SolicitudGarantia
+  texto_ocr?: string
 }
 
 export interface NuevoEquipoData {

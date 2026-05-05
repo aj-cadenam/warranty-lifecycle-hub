@@ -43,7 +43,8 @@ def _procesar_pdf(pdf_path: str, ocr, llm, embedding, vector_store, solicitud_re
         ocr=ocr, llm=llm, embedding=embedding,
         vector_store=vector_store, crear_solicitud=crear_solicitud,
     )
-    return caso_uso.execute(pdf_path=pdf_path)
+    decision, solicitud, texto_ocr = caso_uso.execute(pdf_path=pdf_path)
+    return decision, solicitud, texto_ocr
 
 
 @router.post("/procesar-documento/upload")
@@ -61,7 +62,7 @@ def procesar_documento_upload(
         tmp.write(file.file.read())
         tmp_path = tmp.name
     try:
-        decision, solicitud = _procesar_pdf(
+        decision, solicitud, texto_ocr = _procesar_pdf(
             tmp_path, ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo
         )
     finally:
@@ -80,6 +81,7 @@ def procesar_documento_upload(
         "confianza": decision.confianza,
         "razonamiento": decision.razonamiento,
         "solicitud_creada": solicitud_data,
+        "texto_ocr": texto_ocr,
     }
 
 
@@ -93,7 +95,7 @@ def procesar_documento(
     solicitud_repo=Depends(get_solicitud_repo),
     garantia_repo=Depends(get_garantia_repo),
 ):
-    decision, solicitud = _procesar_pdf(
+    decision, solicitud, texto_ocr = _procesar_pdf(
         data.pdf_path, ocr, llm, embedding, vector_store, solicitud_repo, garantia_repo
     )
     solicitud_data = None
@@ -110,6 +112,7 @@ def procesar_documento(
         "confianza": decision.confianza,
         "razonamiento": decision.razonamiento,
         "solicitud_creada": solicitud_data,
+        "texto_ocr": texto_ocr,
     }
 
 

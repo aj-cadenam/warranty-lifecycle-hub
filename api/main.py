@@ -1,8 +1,15 @@
 # api/main.py
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from config.database import setup_django
 from config.settings import settings
+
+# Langfuse reads os.environ directly — pydantic-settings doesn't export there
+if settings.LANGFUSE_PUBLIC_KEY:
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", settings.LANGFUSE_PUBLIC_KEY)
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", settings.LANGFUSE_SECRET_KEY)
+    os.environ.setdefault("LANGFUSE_HOST", settings.LANGFUSE_HOST)
 
 
 @asynccontextmanager

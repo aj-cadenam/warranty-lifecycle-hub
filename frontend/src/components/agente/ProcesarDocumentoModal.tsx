@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { X, FileText, CheckCircle, AlertCircle, Upload, FolderOpen } from 'lucide-react'
+import { X, FileText, CheckCircle, AlertCircle, Upload, FolderOpen, ChevronDown, ChevronUp, ScanText } from 'lucide-react'
 import { useProcesarDocumento, useUploadDocumento } from '../../hooks/useSolicitudes'
 import type { ProcesarDocumentoResult } from '../../types'
 
@@ -28,6 +28,7 @@ export function ProcesarDocumentoModal({ onClose, onSuccess, onError }: Procesar
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [result, setResult] = useState<ProcesarDocumentoResult | null>(null)
+  const [showOcr, setShowOcr] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const uploadMutation = useUploadDocumento()
@@ -58,6 +59,7 @@ export function ProcesarDocumentoModal({ onClose, onSuccess, onError }: Procesar
 
   const handleUpload = async () => {
     if (!selectedFile) return
+    setShowOcr(false)
     try {
       const res = await uploadMutation.mutateAsync(selectedFile)
       processResult(res)
@@ -69,6 +71,7 @@ export function ProcesarDocumentoModal({ onClose, onSuccess, onError }: Procesar
   const handleFixture = async (path: string) => {
     setSelectedFile(null)
     setResult(null)
+    setShowOcr(false)
     try {
       const res = await fixtureMutation.mutateAsync(path)
       processResult(res)
@@ -82,7 +85,7 @@ export function ProcesarDocumentoModal({ onClose, onSuccess, onError }: Procesar
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -174,24 +177,51 @@ export function ProcesarDocumentoModal({ onClose, onSuccess, onError }: Procesar
 
           {/* Result */}
           {result && (
-            <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={13} className="text-green-600" />
-                <span className="text-xs font-semibold text-slate-800">Resultado</span>
+            <div className="space-y-2">
+              <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={13} className="text-green-600" />
+                  <span className="text-xs font-semibold text-slate-800">Resultado</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <span className="text-slate-500">Acción</span>
+                  <span className="font-medium text-slate-800">{ACCION_LABEL[result.accion] ?? result.accion}</span>
+                  <span className="text-slate-500">Confianza</span>
+                  <span className="font-medium text-slate-800">{Math.round(result.confianza * 100)}%</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{result.razonamiento}</p>
+                {result.solicitud_creada && (
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle size={12} className="text-brand-500" />
+                    <span className="text-xs text-brand-700 font-medium">
+                      Solicitud #{result.solicitud_creada.id} creada
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <span className="text-slate-500">Acción</span>
-                <span className="font-medium text-slate-800">{ACCION_LABEL[result.accion] ?? result.accion}</span>
-                <span className="text-slate-500">Confianza</span>
-                <span className="font-medium text-slate-800">{Math.round(result.confianza * 100)}%</span>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{result.razonamiento}</p>
-              {result.solicitud_creada && (
-                <div className="flex items-center gap-1.5">
-                  <AlertCircle size={12} className="text-brand-500" />
-                  <span className="text-xs text-brand-700 font-medium">
-                    Solicitud #{result.solicitud_creada.id} creada
-                  </span>
+
+              {/* OCR text panel */}
+              {result.texto_ocr && (
+                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                  <button
+                    onClick={() => setShowOcr((v) => !v)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ScanText size={13} className="text-slate-500" />
+                      <span className="text-xs font-medium text-slate-700">Texto extraído por OCR</span>
+                      <span className="text-xs text-slate-400">({result.texto_ocr.length} caracteres)</span>
+                    </div>
+                    {showOcr
+                      ? <ChevronUp size={13} className="text-slate-400" />
+                      : <ChevronDown size={13} className="text-slate-400" />
+                    }
+                  </button>
+                  {showOcr && (
+                    <pre className="p-3 text-xs text-slate-600 bg-white font-mono leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
+                      {result.texto_ocr}
+                    </pre>
+                  )}
                 </div>
               )}
             </div>

@@ -10,7 +10,7 @@ interface ApproveModalProps {
 }
 
 export function ApproveModal({ borrador, onConfirm, onCancel, isLoading }: ApproveModalProps) {
-  const [aprobadoPor, setAprobadoPor] = useState('javiercadena63@gmail.com')
+  const [aprobadoPor, setAprobadoPor] = useState('admin-system@fakemail.com')
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">

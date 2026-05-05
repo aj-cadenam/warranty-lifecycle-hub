@@ -51,4 +51,4 @@ class ProcesarDocumento:
                 pass
 
         self._vector_store.store(chunks, embeddings)
-        return decision, solicitud_creada
+        return decision, solicitud_creada, texto

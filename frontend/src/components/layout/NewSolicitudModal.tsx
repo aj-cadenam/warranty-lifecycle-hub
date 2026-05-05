@@ -12,7 +12,7 @@ interface NewSolicitudModalProps {
 
 export function NewSolicitudModal({ equipos, onClose, onSuccess, onError }: NewSolicitudModalProps) {
   const [equipoId, setEquipoId] = useState('')
-  const [reportadoPor, setReportadoPor] = useState('javiercadena63@gmail.com')
+  const [reportadoPor, setReportadoPor] = useState('admin-system@fakemail.com')
   const [descripcionFalla, setDescripcionFalla] = useState('')
 
   const crearMutation = useCrearSolicitud()
