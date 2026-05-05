@@ -5,7 +5,7 @@ from datetime import datetime
 from src.seguimiento.domain.entities import EstadoBorrador
 from src.seguimiento.application.aprobar_borrador import AprobarBorrador
 from src.seguimiento.application.rechazar_borrador import RechazarBorrador
-from config.dependencies import get_borrador_repo, get_email_adapter
+from config.dependencies import get_borrador_repo, get_email_adapter, get_solicitud_repo
 
 router = APIRouter()
 
@@ -34,6 +34,7 @@ class BorradorResponse(BaseModel):
     motivo_rechazo: Optional[str] = None
     fecha_aprobacion: Optional[datetime] = None
     dias_sin_respuesta: int = 0
+    solicitud_cerrada: bool = False
 
 
 def _to_response(b) -> BorradorResponse:
@@ -79,17 +80,27 @@ def editar_borrador(borrador_id: str, data: EditarBorradorRequest, repo=Depends(
 
 
 @router.post("/{borrador_id}/aprobar", response_model=BorradorResponse)
-def aprobar_borrador(borrador_id: str, data: AprobarRequest,
-                     repo=Depends(get_borrador_repo), email=Depends(get_email_adapter)):
+def aprobar_borrador(
+    borrador_id: str,
+    data: AprobarRequest,
+    repo=Depends(get_borrador_repo),
+    email=Depends(get_email_adapter),
+    solicitud_repo=Depends(get_solicitud_repo),
+):
     try:
-        AprobarBorrador(borrador_repo=repo, email_adapter=email).execute(
-            borrador_id=borrador_id, aprobado_por=data.aprobado_por)
+        resultado = AprobarBorrador(
+            borrador_repo=repo,
+            email_adapter=email,
+            solicitud_repo=solicitud_repo,
+        ).execute(borrador_id=borrador_id, aprobado_por=data.aprobado_por)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     b = repo.find_by_id(borrador_id)
     if not b:
         raise HTTPException(status_code=404, detail="borrador no encontrado")
-    return _to_response(b)
+    response = _to_response(b)
+    response.solicitud_cerrada = resultado.get("solicitud_cerrada", False)
+    return response
 
 
 @router.post("/{borrador_id}/rechazar", response_model=BorradorResponse)
