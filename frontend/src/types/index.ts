@@ -144,3 +144,33 @@ export interface HealthResponse {
   status: string
   llm_provider: string
 }
+
+export interface InboxEmail {
+  uid: string
+  asunto: string
+  remitente: string
+  tiene_adjuntos: boolean
+}
+
+export interface InboxPreview {
+  total: number
+  es_mock: boolean
+  correos: InboxEmail[]
+}
+
+export interface PipelineEmailResult {
+  uid: string
+  asunto: string
+  remitente: string
+  tipo: string
+  confianza: number
+  equipo_serial: string
+  accion_tomada: string | null
+  borradores_generados: number
+  destinatarios: string[]
+}
+
+export interface PipelineResult {
+  procesados: number
+  detalle: PipelineEmailResult[]
+}

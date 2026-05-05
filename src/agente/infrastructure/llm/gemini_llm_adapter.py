@@ -5,11 +5,18 @@ from src.agente.domain.ports import LLMPort
 from src.agente.domain.entities import DecisionAgente, Accion, DecisionCorreo, TipoCorreo, RespuestaChat
 
 _CHAT_SYSTEM_PROMPT = """
-Eres un asistente de gestión de garantías para Datecsa S.A.
-Responde en español, de forma concisa y útil. Usa el contexto del sistema para dar respuestas precisas.
+Eres un agente experto en gestión de garantías de equipos tecnológicos para Datecsa S.A., distribuidor exclusivo de Kyocera en Colombia con 34 años de experiencia. También comercializa Barco, Crestron, Bose Professional y LG Business.
 
-Si el usuario quiere buscar casos similares o fallas parecidas, detecta la query de búsqueda.
-Si quiere ejecutar la verificación semanal de garantías, indícalo.
+Tienes acceso al estado actual del sistema: solicitudes activas, borradores pendientes de aprobación y equipos en reparación.
+
+Flujo del proceso de garantía:
+1. Acta de entrega → solicitud creada (estado: nueva)
+2. Equipo despachado al proveedor → estado: despachada
+3. Proveedor confirma recepción → estado: en_reparacion
+4. Proveedor repara y devuelve → estado: devuelta → borradores para bodega, despacho, recepción y responsable
+5. Cliente recibe equipo → estado: cerrada
+
+Puedes ayudar a: buscar casos similares, ejecutar verificación semanal, explicar estado de equipos, analizar tendencias de fallas.
 
 Responde SOLO con JSON válido (sin bloques markdown):
 {
@@ -20,17 +27,20 @@ Responde SOLO con JSON válido (sin bloques markdown):
 """
 
 _SYSTEM_PROMPT = """
-Eres un agente de gestión de garantías de equipos para Datecsa S.A.
-Analiza el texto del documento y responde SOLO con JSON válido (sin bloques markdown):
+Eres un agente especializado en análisis de documentos de garantía para Datecsa S.A.
+Analiza actas de entrega, órdenes de servicio y documentos de garantía de equipos tecnológicos (Kyocera, Barco, Crestron, Bose Professional, LG Business).
+
+Extrae la información clave y decide la acción apropiada.
+Responde SOLO con JSON válido (sin bloques markdown):
 {
   "accion": "CREAR_SOLICITUD" | "ACTUALIZAR_ESTADO" | "NOTIFICAR" | "ESCALAR" | "IGNORAR",
   "confianza": float 0-1,
   "parametros": {
-    "equipo_serial": "...",
-    "descripcion_falla": "...",
-    "reportado_por": "..."
+    "equipo_serial": "serial exacto del equipo",
+    "descripcion_falla": "descripción técnica de la falla",
+    "reportado_por": "nombre del técnico o responsable"
   },
-  "razonamiento": "..."
+  "razonamiento": "explicación de por qué tomaste esta decisión"
 }
 """
 
@@ -65,8 +75,31 @@ class GeminiLLMAdapter(LLMPort):
     @observe(as_type="generation", name="llm.generate_email")
     def generate_email(self, context: str) -> dict[str, str]:
         prompt = (
-            f"Genera un correo formal y amable en español para solicitar una actualización "
-            f"de garantía. Contexto: {context}\n"
+            f"Eres un colaborador de Datecsa S.A. redactando un correo real a un contacto de trabajo.\n"
+            f"Escribe exactamente como lo haría una persona, no un sistema automatizado.\n\n"
+            f"ESTRUCTURA OBLIGATORIA:\n"
+            f"1. Primera línea — saludo cálido: 'Buenos días,' o 'Buen día,' o 'Cordial saludo,'\n"
+            f"2. Segunda línea — cortesía: 'Espero se encuentre muy bien.' o 'Espero estés muy bien.'\n"
+            f"3. Párrafo principal — menciona directamente el equipo (serial exacto, marca y modelo "
+            f"si están disponibles) y el motivo del correo con datos concretos:\n"
+            f"   • Si es seguimiento sin respuesta del proveedor: "
+            f"'Me podría actualizar acerca del equipo [serial] [marca modelo], "
+            f"enviado el [fecha de reporte]. Llevamos [N] días sin respuesta de su parte...'\n"
+            f"   • Si es notificación de devolución (bodega/despacho/recepción): "
+            f"'Les informo que el equipo [serial] [marca modelo] ha sido reparado y está "
+            f"listo para ser recibido. Por favor coordinar el proceso de recepción...'\n"
+            f"   • Si es notificación interna al responsable: "
+            f"'Quiero informarle que recibimos novedad sobre el equipo [serial] en garantía...'\n"
+            f"4. Párrafo de cierre — disponibilidad: "
+            f"'Quedo atento a su respuesta.' o 'Cualquier duda, con gusto te colaboro.'\n"
+            f"5. Despedida y firma:\n"
+            f"   Atentamente,\n\n"
+            f"   [Nombre del área según destinatario]\n"
+            f"   Datecsa S.A.\n\n"
+            f"TONO: profesional pero humano y cálido. Nada de frases robóticas como "
+            f"'Estimado usuario', 'Le informamos que el sistema', 'Se procede a notificar'. "
+            f"Usa 'le', 'usted' para externos (proveedores, clientes) y 'te' para internos.\n\n"
+            f"Datos del caso:\n{context}\n\n"
             f"Responde SOLO con JSON (sin bloques markdown): {{\"asunto\": \"...\", \"cuerpo\": \"...\"}}"
         )
         response = self._client.models.generate_content(model=self._model, contents=prompt)

@@ -152,6 +152,7 @@ def verificar_estado_semanal(
         seguimiento_repo=seguimiento_repo,
         llm=llm,
         timeout_proveedor_dias=settings.TIMEOUT_PROVEEDOR_DIAS,
+        timeout_cliente_dias=settings.TIMEOUT_CLIENTE_DIAS,
     )
     return caso_uso.execute()
 
@@ -190,6 +191,31 @@ def buscar_similares(
     return {"resultados": resultados, "query": q}
 
 
+@router.get("/inbox-preview")
+def inbox_preview(email_reader=Depends(get_email_reader)):
+    from src.agente.infrastructure.email.outlook_adapter import IMAPAuthError
+    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
+    try:
+        correos = email_reader.fetch_unread()
+        es_mock = False
+    except IMAPAuthError:
+        correos = FakeEmailReaderAdapter().fetch_unread()
+        es_mock = True
+    return {
+        "total": len(correos),
+        "es_mock": es_mock,
+        "correos": [
+            {
+                "uid": c.uid,
+                "asunto": c.asunto,
+                "remitente": c.remitente,
+                "tiene_adjuntos": len(c.adjuntos) > 0,
+            }
+            for c in correos
+        ],
+    }
+
+
 @router.post("/procesar-correos")
 def procesar_correos(
     llm=Depends(get_llm_adapter),
@@ -205,9 +231,18 @@ def procesar_correos(
     from src.agente.application.procesar_correo import ProcesarCorreo
     from src.solicitudes.application.crear_solicitud import CrearSolicitud
 
+    from src.agente.infrastructure.email.outlook_adapter import IMAPAuthError
+    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
+
+    try:
+        _ = email_reader.fetch_unread()
+        reader = email_reader
+    except IMAPAuthError:
+        reader = FakeEmailReaderAdapter()
+
     caso_uso = ProcesarCorreo(
         llm=llm,
-        email_reader=email_reader,
+        email_reader=reader,
         ocr=ocr,
         embedding=embedding,
         vector_store=vector_store,

@@ -38,12 +38,15 @@ class OrquestarAcciones:
         destinos = self._resolver_destinos(decision.tipo)
         borradores: list[BorradorCorreo] = []
         for dest in destinos:
+            serial = decision.equipo_serial or solicitud.equipo_id
             contexto = (
-                f"Solicitud {solicitud.id}, equipo {solicitud.equipo_id}. "
-                f"Falla: {solicitud.descripcion_falla}. "
-                f"Evento recibido: {decision.tipo.value}. "
-                f"Información adicional: {decision.informacion_adicional}. "
-                f"Destinatario: {dest.rol_label}."
+                f"Tipo de correo: {decision.tipo.value}. "
+                f"Destinatario: {dest.rol_label}. "
+                f"Número de solicitud: {solicitud.id}. "
+                f"Serial del equipo: {serial}. "
+                f"Falla reportada: {solicitud.descripcion_falla}. "
+                f"Fecha de reporte: {solicitud.fecha_reporte}. "
+                f"Información adicional del evento: {decision.informacion_adicional}."
             )
             email_data = self._llm.generate_email(contexto)
             borrador = BorradorCorreo(

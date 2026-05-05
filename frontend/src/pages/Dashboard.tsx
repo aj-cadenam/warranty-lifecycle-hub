@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { NavSection } from '../types'
 import { LeftPanel } from '../components/layout/LeftPanel'
 import { CenterPanel } from '../components/layout/CenterPanel'
+import { FloatingAgentButton } from '../components/agent/FloatingAgentButton'
 import { ToastContainer, useToast } from '../components/ui/Toast'
 import { useSolicitudes } from '../hooks/useSolicitudes'
 import { useBorradores } from '../hooks/useBorradores'
@@ -56,6 +57,7 @@ export function Dashboard() {
       {/* Center Panel */}
       <CenterPanel
         activeSection={activeSection}
+        onSectionChange={setActiveSection}
         solicitudes={solicitudes}
         borradores={borradores}
         equipos={equipos}
@@ -64,6 +66,13 @@ export function Dashboard() {
         isLoadingBorradores={isLoadingBorradores}
         isLoadingEquipos={isLoadingEquipos}
         isLoadingNotificaciones={isLoadingNotificaciones}
+        onToast={handleToast}
+      />
+
+      {/* Floating AI agent button */}
+      <FloatingAgentButton
+        solicitudes={solicitudes}
+        borradores={borradores}
         onToast={handleToast}
       />
 

@@ -1,5 +1,6 @@
 .PHONY: install dev docker-up docker-down docker-build \
-        migrate fixtures test test-unit test-app test-integration test-e2e lint
+        migrate fixtures seed reset \
+        test test-unit test-app test-integration test-e2e lint
 
 install:
 	cp -n .env.example .env || true
@@ -23,6 +24,12 @@ migrate:
 
 fixtures:
 	uv run python scripts/generate_fixtures.py
+
+seed:
+	uv run python scripts/seed_db.py
+
+reset:
+	uv run python scripts/reset_db.py
 
 test-unit:
 	uv run pytest tests/unit/ -v

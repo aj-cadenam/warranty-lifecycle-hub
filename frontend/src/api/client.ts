@@ -1,4 +1,4 @@
-import type { SolicitudGarantia, BorradorCorreo, BuscarResultado, Equipo, VerificarSemanalResult, Notificacion, NuevoEquipoData, ProcesarDocumentoResult, ChatRequest, ChatResponse, HealthResponse } from '../types'
+import type { SolicitudGarantia, BorradorCorreo, BuscarResultado, Equipo, VerificarSemanalResult, Notificacion, NuevoEquipoData, ProcesarDocumentoResult, ChatRequest, ChatResponse, HealthResponse, InboxPreview, PipelineResult } from '../types'
 
 const API_BASE = '/api'
 
@@ -93,6 +93,15 @@ export const api = {
       body: JSON.stringify({ pdf_path: pdfPath }),
     }),
 
+  uploadDocumento: (file: File): Promise<ProcesarDocumentoResult> => {
+    const form = new FormData()
+    form.append('file', file)
+    return fetchJson<ProcesarDocumentoResult>(`${API_BASE}/agente/procesar-documento/upload`, {
+      method: 'POST',
+      body: form,
+    })
+  },
+
   buscarSimilares: (q: string): Promise<{ resultados: BuscarResultado[] }> =>
     fetchJson<{ resultados: BuscarResultado[] }>(`${API_BASE}/agente/buscar-similares?q=${encodeURIComponent(q)}`),
 
@@ -105,4 +114,10 @@ export const api = {
 
   getHealth: (): Promise<HealthResponse> =>
     fetchJson<HealthResponse>(`${API_BASE}/health`),
+
+  inboxPreview: (): Promise<InboxPreview> =>
+    fetchJson<InboxPreview>(`${API_BASE}/agente/inbox-preview`),
+
+  procesarCorreos: (): Promise<PipelineResult> =>
+    fetchJson<PipelineResult>(`${API_BASE}/agente/procesar-correos`, { method: 'POST' }),
 }

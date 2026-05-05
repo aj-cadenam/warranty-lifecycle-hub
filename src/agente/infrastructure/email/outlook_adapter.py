@@ -10,6 +10,10 @@ from email.mime.multipart import MIMEMultipart
 from src.agente.domain.ports import EmailPort, EmailReaderPort
 from src.agente.domain.entities import CorreoEntrante
 
+
+class IMAPAuthError(Exception):
+    """Raised when IMAP authentication fails (e.g. basic auth blocked by provider)."""
+
 _IMAP_HOST = "imap-mail.outlook.com"
 _IMAP_PORT = 993
 _SMTP_HOST = "smtp-mail.outlook.com"
@@ -43,21 +47,27 @@ class OutlookIMAPAdapter(EmailReaderPort):
 
     def fetch_unread(self) -> list[CorreoEntrante]:
         correos = []
-        with imaplib.IMAP4_SSL(_IMAP_HOST, _IMAP_PORT) as imap:
-            imap.login(self._address, self._password)
-            imap.select(self._folder)
-            _, uids = imap.search(None, "UNSEEN")
-            for uid in uids[0].split():
-                _, data = imap.fetch(uid, "(RFC822)")
-                msg = email_lib.message_from_bytes(data[0][1])
-                correos.append(self._parse(uid.decode(), msg))
+        try:
+            with imaplib.IMAP4_SSL(_IMAP_HOST, _IMAP_PORT) as imap:
+                imap.login(self._address, self._password)
+                imap.select(self._folder)
+                _, uids = imap.search(None, "UNSEEN")
+                for uid in uids[0].split():
+                    _, data = imap.fetch(uid, "(RFC822)")
+                    msg = email_lib.message_from_bytes(data[0][1])
+                    correos.append(self._parse(uid.decode(), msg))
+        except imaplib.IMAP4.error as e:
+            raise IMAPAuthError(str(e)) from e
         return correos
 
     def mark_as_read(self, uid: str) -> None:
-        with imaplib.IMAP4_SSL(_IMAP_HOST, _IMAP_PORT) as imap:
-            imap.login(self._address, self._password)
-            imap.select(self._folder)
-            imap.store(uid, "+FLAGS", "\\Seen")
+        try:
+            with imaplib.IMAP4_SSL(_IMAP_HOST, _IMAP_PORT) as imap:
+                imap.login(self._address, self._password)
+                imap.select(self._folder)
+                imap.store(uid, "+FLAGS", "\\Seen")
+        except imaplib.IMAP4.error as e:
+            raise IMAPAuthError(str(e)) from e
 
     def _parse(self, uid: str, msg) -> CorreoEntrante:
         asunto = email_lib.header.decode_header(msg["Subject"] or "")[0]

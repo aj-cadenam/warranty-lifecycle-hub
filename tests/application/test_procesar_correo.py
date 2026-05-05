@@ -256,6 +256,8 @@ def test_todos_los_correos_se_marcan_como_leidos():
 
 
 def test_multiples_correos_todos_procesados():
+    # Two acta_entrega emails for the same serial: only one solicitud should be created,
+    # the second is idempotent (solicitud_ya_activa).
     serial = "KYO-001"
     decision = DecisionCorreo(tipo=TipoCorreo.ACTA_ENTREGA, confianza=0.95, equipo_serial=serial)
     correos = [_correo("uid-1"), _correo("uid-2")]
@@ -264,4 +266,7 @@ def test_multiples_correos_todos_procesados():
     resultado = caso_uso.execute()
 
     assert resultado["procesados"] == 2
-    assert len(solicitud_repo.find_all()) == 2
+    assert len(solicitud_repo.find_all()) == 1
+    acciones = [r["accion_tomada"] for r in resultado["detalle"]]
+    assert "solicitud_creada_desde_correo" in acciones
+    assert "solicitud_ya_activa" in acciones

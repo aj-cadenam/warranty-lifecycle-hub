@@ -119,6 +119,20 @@ class ProcesarCorreo:
             return "solicitud_creada_desde_pdf", solicitud
 
         if decision.equipo_serial:
+            estados_activos = [
+                EstadoSolicitud.NUEVA, EstadoSolicitud.VALIDADA,
+                EstadoSolicitud.DESPACHADA, EstadoSolicitud.EN_REPARACION,
+                EstadoSolicitud.DEVUELTA,
+            ]
+            for estado in estados_activos:
+                existente = next(
+                    (s for s in self._solicitud_repo.find_by_estado(estado)
+                     if s.equipo_id == decision.equipo_serial),
+                    None,
+                )
+                if existente:
+                    return "solicitud_ya_activa", existente
+
             try:
                 solicitud = self._crear_solicitud.execute(
                     equipo_id=decision.equipo_serial,
@@ -147,7 +161,10 @@ class ProcesarCorreo:
 
         nuevo_estado = _ESTADO_MAP.get(decision.nuevo_estado)
         if nuevo_estado:
-            ActualizarEstado(self._solicitud_repo).execute(solicitud.id, nuevo_estado)
+            try:
+                ActualizarEstado(self._solicitud_repo).execute(solicitud.id, nuevo_estado)
+            except ValueError:
+                pass  # transición ya aplicada (estado idempotente)
 
         evento = EventoTrazabilidad(
             equipo_id=decision.equipo_serial,

@@ -1,27 +1,27 @@
 import { useState, useEffect } from 'react'
-import { Plus, RefreshCw, Search, Shield, Monitor, Inbox, CheckSquare, FileText, Bell, Bot, Sparkles, PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { Plus, Search, Shield, Monitor, Inbox, FileText, Bell, ChevronRight } from 'lucide-react'
 import type { NavSection, SolicitudGarantia, BorradorCorreo, Equipo, Notificacion } from '../../types'
 import { SolicitudCard } from '../solicitudes/SolicitudCard'
 import { BorradorCard } from '../borradores/BorradorCard'
 import { SolicitudCardSkeleton } from '../ui/Skeleton'
-import { useVerificarSemanal } from '../../hooks/useSolicitudes'
 import { api } from '../../api/client'
 import { NewSolicitudModal } from './NewSolicitudModal'
 import { NuevoEquipoModal } from '../equipos/NuevoEquipoModal'
 import { ProcesarDocumentoModal } from '../agente/ProcesarDocumentoModal'
-import { AgentChat } from '../agent/AgentChat'
+import { PipelineRunner } from '../pipeline/PipelineRunner'
 
 const SECTION_TITLES: Record<NavSection, string> = {
-  dashboard: 'Dashboard',
-  garantias: 'Solicitudes de Garantía',
-  equipos: 'Equipos',
-  borradores: 'Borradores de Correo',
-  verificar: 'Verificación Semanal',
+  dashboard:      'Inicio',
+  garantias:      'Casos activos',
+  equipos:        'Equipos registrados',
+  borradores:     'Correos para aprobar',
+  verificar:      'Revisión semanal',
   notificaciones: 'Notificaciones',
 }
 
 interface CenterPanelProps {
   activeSection: NavSection
+  onSectionChange: (section: NavSection) => void
   solicitudes: SolicitudGarantia[]
   borradores: BorradorCorreo[]
   equipos: Equipo[]
@@ -35,6 +35,7 @@ interface CenterPanelProps {
 
 export function CenterPanel({
   activeSection,
+  onSectionChange,
   solicitudes,
   borradores,
   equipos,
@@ -46,31 +47,16 @@ export function CenterPanel({
   onToast,
 }: CenterPanelProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [showChat, setShowChat] = useState(true)
   const [showNewSolicitudModal, setShowNewSolicitudModal] = useState(false)
   const [showNuevoEquipoModal, setShowNuevoEquipoModal] = useState(false)
   const [showProcesarDocumentoModal, setShowProcesarDocumentoModal] = useState(false)
   const [llmProvider, setLlmProvider] = useState('...')
-  const verificarMutation = useVerificarSemanal()
 
   useEffect(() => {
     api.getHealth().then(h => setLlmProvider(h.llm_provider)).catch(() => setLlmProvider('?'))
   }, [])
-  const providerLabel = llmProvider === 'gemini' ? 'Gemini · Real' : llmProvider === '...' ? 'Gemini · ...' : 'Gemini · Mock mode'
 
   const title = SECTION_TITLES[activeSection]
-
-  const handleVerificarSemanal = async () => {
-    try {
-      const result = await verificarMutation.mutateAsync()
-      onToast(
-        `Verificación completada: ${result.solicitudes_verificadas} solicitudes, ${result.borradores_generados} borradores generados`,
-        'success'
-      )
-    } catch {
-      onToast('Error al ejecutar la verificación semanal', 'error')
-    }
-  }
 
   const filteredSolicitudes = solicitudes.filter((s) => {
     if (!searchQuery) return true
@@ -106,49 +92,31 @@ export function CenterPanel({
           <div>
             <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              {activeSection === 'garantias' && `${solicitudes.length} solicitudes totales`}
-              {activeSection === 'borradores' && `${borradores.filter(b => b.estado === 'pendiente_aprobacion').length} pendientes de aprobación`}
+              {activeSection === 'garantias' && `${solicitudes.filter(s => s.estado !== 'cerrada').length} casos activos`}
+              {activeSection === 'borradores' && (() => {
+                const pendientes = borradores.filter(b => b.estado === 'pendiente_aprobacion').length
+                return pendientes > 0 ? `${pendientes} correos esperando tu revisión` : 'Sin correos pendientes'
+              })()}
               {activeSection === 'equipos' && `${equipos.length} equipos registrados`}
-              {activeSection === 'dashboard' && 'Vista general del sistema'}
-              {activeSection === 'verificar' && 'Verifica el estado de garantías activas'}
+              {activeSection === 'dashboard' && 'Procesa correos y gestiona el flujo completo del pipeline'}
+              {activeSection === 'verificar' && (() => {
+                const activas = solicitudes.filter(s => s.estado !== 'cerrada').length
+                const pendientes = borradores.filter(b => b.estado === 'pendiente_aprobacion').length
+                return `${activas} casos activos${pendientes > 0 ? ` · ${pendientes} correos pendientes` : ''}`
+              })()}
               {activeSection === 'notificaciones' && `${notificaciones.length} notificaciones`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* LLM AI toggle — only relevant on dashboard */}
-            {activeSection === 'dashboard' && (
+            {(activeSection === 'dashboard' || activeSection === 'garantias') && (
               <button
-                onClick={() => setShowChat((v) => !v)}
-                title={showChat ? 'Ocultar Agente IA' : 'Mostrar Agente IA'}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  showChat
-                    ? 'bg-brand-600 text-white border-brand-600 hover:bg-brand-700 shadow-sm shadow-brand-200'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                }`}
+                onClick={() => setShowProcesarDocumentoModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
               >
-                <Sparkles size={14} className={showChat ? 'text-white' : 'text-brand-500'} />
-                <span>LLM IA</span>
-                {showChat
-                  ? <PanelRightClose size={13} className="ml-0.5 opacity-80" />
-                  : <PanelRightOpen size={13} className="ml-0.5 text-slate-400" />
-                }
+                <FileText size={14} />
+                Procesar PDF
               </button>
             )}
-            <button
-              onClick={() => setShowProcesarDocumentoModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
-            >
-              <FileText size={14} />
-              Procesar PDF
-            </button>
-            <button
-              onClick={handleVerificarSemanal}
-              disabled={verificarMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={verificarMutation.isPending ? 'animate-spin' : ''} />
-              Verificar Semanal
-            </button>
             {activeSection === 'equipos' ? (
               <button
                 onClick={() => setShowNuevoEquipoModal(true)}
@@ -188,87 +156,17 @@ export function CenterPanel({
         )}
       </div>
 
-      {/* Content area — dashboard is two-column, others are single scroll */}
-      {activeSection === 'dashboard' ? (
-        <div className="flex-1 overflow-hidden flex">
-          {/* Left: stats + recent */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <StatCard
-                icon={Shield}
-                label="Total solicitudes"
-                value={solicitudes.length}
-                subLabel={`${solicitudes.filter(s => s.estado !== 'cerrada').length} activas`}
-                color="blue"
-              />
-              <StatCard
-                icon={Inbox}
-                label="Borradores pendientes"
-                value={borradores.filter(b => b.estado === 'pendiente_aprobacion').length}
-                subLabel="Requieren aprobación"
-                color={borradores.filter(b => b.estado === 'pendiente_aprobacion').length > 0 ? 'amber' : 'slate'}
-              />
-              <StatCard
-                icon={CheckSquare}
-                label="Solicitudes cerradas"
-                value={solicitudes.filter(s => s.estado === 'cerrada').length}
-                subLabel="Resueltas"
-                color="green"
-              />
-            </div>
+      {/* Content area */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
 
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Solicitudes recientes</h3>
-              {isLoadingSolicitudes ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => <SolicitudCardSkeleton key={i} />)}
-                </div>
-              ) : solicitudes.length === 0 ? (
-                <EmptyState
-                  icon={Shield}
-                  title="Sin solicitudes"
-                  description="No hay solicitudes registradas. El backend puede estar iniciando."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {solicitudes.slice(0, 5).map((s) => (
-                    <SolicitudCard key={s.id} solicitud={s} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: embedded agent chat */}
-          {showChat && <div className="w-80 flex-shrink-0 border-l border-slate-200 flex flex-col bg-white">
-            <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
-                  <Bot size={15} className="text-white" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800">Agente IA</span>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse-dot" />
-                      <span className="text-xs text-green-600 font-medium">Activo</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-400">{providerLabel}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <AgentChat
-                solicitudes={solicitudes}
-                borradores={borradores}
-                onToast={onToast}
-              />
-            </div>
-          </div>}
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {/* DASHBOARD — Pipeline Runner */}
+          {activeSection === 'dashboard' && (
+            <PipelineRunner
+              solicitudes={solicitudes}
+              onNavigateToBorradores={() => onSectionChange('borradores')}
+              onToast={onToast}
+            />
+          )}
 
           {/* GARANTIAS */}
           {activeSection === 'garantias' && (
@@ -374,46 +272,48 @@ export function CenterPanel({
             </div>
           )}
 
-          {/* VERIFICAR */}
+          {/* VERIFICAR — KPIs + lista de urgencia */}
           {activeSection === 'verificar' && (
-            <div className="max-w-lg mx-auto text-center py-12">
-              <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <RefreshCw size={28} className="text-brand-600" />
+            <div className="space-y-5">
+              <div className="grid grid-cols-3 gap-3">
+                <ActionKPI
+                  label="Requieren acción"
+                  value={solicitudes.filter(s => s.estado === 'nueva' || s.estado === 'validada').length}
+                  subLabel="nuevas y validadas"
+                  color="amber"
+                  icon="⚡"
+                />
+                <ActionKPI
+                  label="Con el proveedor"
+                  value={solicitudes.filter(s => s.estado === 'despachada' || s.estado === 'en_reparacion').length}
+                  subLabel="despachadas · en reparación"
+                  color="purple"
+                  icon="🔧"
+                />
+                <ActionKPI
+                  label="Correos por aprobar"
+                  value={borradores.filter(b => b.estado === 'pendiente_aprobacion').length}
+                  subLabel="esperando tu revisión"
+                  color={borradores.filter(b => b.estado === 'pendiente_aprobacion').length > 0 ? 'red' : 'slate'}
+                  icon="✉️"
+                />
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Verificación Semanal</h3>
-              <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-                Verifica el estado de todas las solicitudes activas. Para cada solicitud sin respuesta
-                del proveedor o cliente que supere el timeout configurado, se generará un borrador de
-                seguimiento automáticamente.
-              </p>
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6 text-left space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Timeout proveedor</span>
-                  <span className="font-medium text-slate-800">7 días</span>
+              {isLoadingSolicitudes ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <SolicitudCardSkeleton key={i} />)}
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Timeout cliente</span>
-                  <span className="font-medium text-slate-800">7 días</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Solicitudes activas</span>
-                  <span className="font-medium text-slate-800">
-                    {solicitudes.filter(s => ['despachada', 'en_reparacion'].includes(s.estado)).length}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={handleVerificarSemanal}
-                disabled={verificarMutation.isPending}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
-              >
-                <RefreshCw size={16} className={verificarMutation.isPending ? 'animate-spin' : ''} />
-                {verificarMutation.isPending ? 'Verificando...' : 'Ejecutar verificación'}
-              </button>
+              ) : solicitudes.length === 0 ? (
+                <EmptyState
+                  icon={Shield}
+                  title="Sin casos activos"
+                  description="No hay solicitudes registradas. Procesa un PDF o crea una manualmente."
+                />
+              ) : (
+                <UrgencyGroups solicitudes={solicitudes} onVerTodos={() => onSectionChange('garantias')} />
+              )}
             </div>
           )}
         </div>
-      )}
 
       {/* Modals */}
       {showNewSolicitudModal && (
@@ -452,31 +352,84 @@ export function CenterPanel({
 
 // ── Helper components ──────────────────────────────────────────────────────────
 
-interface StatCardProps {
-  icon: React.ComponentType<{ size?: number; className?: string }>
+interface ActionKPIProps {
   label: string
   value: number
   subLabel: string
-  color: 'blue' | 'amber' | 'green' | 'slate'
+  color: 'amber' | 'purple' | 'red' | 'green' | 'slate'
+  icon: string
 }
 
-function StatCard({ icon: Icon, label, value, subLabel, color }: StatCardProps) {
-  const colorClasses = {
-    blue: 'bg-brand-50 text-brand-600',
-    amber: 'bg-amber-50 text-amber-600',
-    green: 'bg-green-50 text-green-600',
-    slate: 'bg-slate-100 text-slate-500',
+function ActionKPI({ label, value, subLabel, color, icon }: ActionKPIProps) {
+  const colors = {
+    amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  num: 'text-amber-600',  bar: 'bg-amber-400' },
+    purple: { bg: 'bg-purple-50', border: 'border-purple-200', num: 'text-purple-600', bar: 'bg-purple-400' },
+    red:    { bg: 'bg-red-50',    border: 'border-red-200',    num: 'text-red-600',    bar: 'bg-red-400' },
+    green:  { bg: 'bg-green-50',  border: 'border-green-200',  num: 'text-green-600',  bar: 'bg-green-400' },
+    slate:  { bg: 'bg-slate-50',  border: 'border-slate-200',  num: 'text-slate-500',  bar: 'bg-slate-300' },
   }
+  const c = colors[color]
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon size={18} />
+    <div className={`rounded-lg border ${c.border} ${c.bg} p-3 relative overflow-hidden`}>
+      <div className={`absolute top-0 left-0 w-1 h-full ${c.bar}`} />
+      <p className="text-xs text-slate-500 mb-1 pl-2">{label}</p>
+      <p className={`text-2xl font-bold pl-2 ${c.num}`}>{value}</p>
+      <p className="text-xs text-slate-400 mt-0.5 pl-2">{subLabel}</p>
+    </div>
+  )
+}
+
+function getDays(fecha: string) {
+  const normalized = fecha.includes('T') ? fecha : `${fecha}T00:00`
+  return Math.max(0, Math.floor((Date.now() - new Date(normalized).getTime()) / 86400000))
+}
+
+function UrgencyGroups({ solicitudes, onVerTodos }: { solicitudes: import('../../types').SolicitudGarantia[]; onVerTodos: () => void }) {
+  const DASHBOARD_LIMIT = 5
+  const activas = solicitudes.filter(s => s.estado !== 'cerrada')
+  const urgentes = activas.filter(s => getDays(s.fecha_reporte) > 14).sort((a, b) => getDays(b.fecha_reporte) - getDays(a.fecha_reporte))
+  const atencion = activas.filter(s => getDays(s.fecha_reporte) > 7 && getDays(s.fecha_reporte) <= 14)
+  const normales = activas.filter(s => getDays(s.fecha_reporte) <= 7)
+
+  // Merge all activas sorted by urgency, limit to DASHBOARD_LIMIT
+  const sorted = [...urgentes, ...atencion, ...normales]
+  const visible = sorted.slice(0, DASHBOARD_LIMIT)
+  const remaining = sorted.length - visible.length
+
+  const Group = ({ title, dot, items }: { title: string; dot: string; items: typeof activas }) => {
+    if (items.length === 0) return null
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`w-2 h-2 rounded-full ${dot}`} />
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{title}</h3>
+          <span className="text-xs text-slate-400">({items.length})</span>
+        </div>
+        <div className="space-y-2">
+          {items.map(s => <SolicitudCard key={s.id} solicitud={s} />)}
         </div>
       </div>
-      <p className="text-3xl font-bold text-brand-600">{value}</p>
-      <p className="text-sm font-semibold text-slate-700 mt-1">{label}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{subLabel}</p>
+    )
+  }
+
+  const urgentesVisible = visible.filter(s => getDays(s.fecha_reporte) > 14)
+  const atencionVisible = visible.filter(s => getDays(s.fecha_reporte) > 7 && getDays(s.fecha_reporte) <= 14)
+  const normalesVisible = visible.filter(s => getDays(s.fecha_reporte) <= 7)
+
+  return (
+    <div className="space-y-5">
+      <Group title="Urgente · +14 días" dot="bg-red-400" items={urgentesVisible} />
+      <Group title="Atención · 7-14 días" dot="bg-amber-400" items={atencionVisible} />
+      <Group title="Al día · <7 días" dot="bg-green-400" items={normalesVisible} />
+      {remaining > 0 && (
+        <button
+          onClick={onVerTodos}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 text-sm text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-lg border border-brand-200 transition-colors font-medium"
+        >
+          Ver todos los casos ({remaining} más)
+          <ChevronRight size={14} />
+        </button>
+      )}
     </div>
   )
 }

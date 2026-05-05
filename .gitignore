@@ -15,3 +15,6 @@ build/
 .mypy_cache/
 htmlcov/
 .coverage
+todo.md
+CLAUDE.md 
+.claude/

@@ -27,12 +27,12 @@ export function LeftPanel({
   isApiConnected,
 }: LeftPanelProps) {
   const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'garantias', label: 'Garantías', icon: Shield },
-    { id: 'equipos', label: 'Equipos', icon: Monitor },
-    { id: 'borradores', label: 'Borradores', icon: Mail, badge: borradorsPendingCount },
-    { id: 'verificar', label: 'Verificar Semanal', icon: RefreshCw },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'dashboard',      label: 'Inicio',              icon: LayoutDashboard },
+    { id: 'garantias',      label: 'Casos activos',        icon: Shield, badge: solicitudesCount },
+    { id: 'equipos',        label: 'Equipos',              icon: Monitor },
+    { id: 'borradores',     label: 'Correos para aprobar', icon: Mail, badge: borradorsPendingCount },
+    { id: 'verificar',      label: 'Revisión semanal',     icon: RefreshCw },
+    { id: 'notificaciones', label: 'Notificaciones',       icon: Bell },
   ]
 
   return (
@@ -80,7 +80,7 @@ export function LeftPanel({
             <>
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                 <p className="text-xl font-bold text-brand-600">{solicitudesCount}</p>
-                <p className="text-xs text-slate-500 leading-tight mt-0.5">Garantías activas</p>
+                <p className="text-xs text-slate-500 leading-tight mt-0.5">Casos activos</p>
               </div>
               <div
                 className={`rounded-lg p-3 border ${
@@ -93,7 +93,7 @@ export function LeftPanel({
                   {borradorsPendingCount}
                 </p>
                 <p className={`text-xs leading-tight mt-0.5 ${borradorsPendingCount > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
-                  Borradores pendientes
+                  Correos pendientes
                 </p>
               </div>
             </>

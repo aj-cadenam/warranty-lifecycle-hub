@@ -20,10 +20,39 @@ class FakeLLMAdapter(LLMPort):
         )
 
     def generate_email(self, context: str) -> dict[str, str]:
-        return {
-            "asunto": "[FAKE] Seguimiento garantía",
-            "cuerpo": "Estimados, solicitamos amablemente una actualización. Cordialmente, Datecsa S.A.",
-        }
+        import re
+        serial_match = re.search(r"Serial del equipo:\s*([^\.\,]+)", context)
+        serial = serial_match.group(1).strip() if serial_match else "equipo en garantía"
+        dias_match = re.search(r"Días sin respuesta:\s*(\d+)", context)
+        dias = dias_match.group(1) if dias_match else None
+        fecha_match = re.search(r"Fecha de (?:reporte|envío al proveedor):\s*([^\.\,]+)", context)
+        fecha = fecha_match.group(1).strip() if fecha_match else None
+
+        if dias:
+            asunto = f"[FAKE] Seguimiento garantía — {serial}"
+            cuerpo = (
+                f"Buenos días,\n\n"
+                f"Espero se encuentre muy bien.\n\n"
+                f"Me podría actualizar acerca del equipo {serial}"
+                f"{f', enviado el {fecha}' if fecha else ''}. "
+                f"Llevamos {dias} días sin respuesta de su parte y queremos asegurarnos "
+                f"de que todo esté en orden con el proceso de reparación.\n\n"
+                f"Agradezco mucho su atención y quedo atento a su respuesta.\n\n"
+                f"Atentamente,\n\n"
+                f"Equipo de Servicio Técnico\nDatacsa S.A."
+            )
+        else:
+            asunto = f"[FAKE] Notificación garantía — {serial}"
+            cuerpo = (
+                f"Buenos días,\n\n"
+                f"Espero se encuentre muy bien.\n\n"
+                f"Quiero informarle sobre una novedad relacionada con el equipo {serial}. "
+                f"Por favor revisar el caso y coordinar las acciones correspondientes.\n\n"
+                f"Cualquier duda, con gusto le colaboro.\n\n"
+                f"Atentamente,\n\n"
+                f"Equipo de Servicio Técnico\nDatacsa S.A."
+            )
+        return {"asunto": asunto, "cuerpo": cuerpo}
 
     def classify_email(self, asunto: str, cuerpo: str) -> DecisionCorreo:
         texto = (asunto + " " + cuerpo).lower()

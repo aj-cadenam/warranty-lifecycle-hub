@@ -53,6 +53,16 @@ export function useProcesarDocumento() {
   })
 }
 
+export function useUploadDocumento() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.uploadDocumento,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['solicitudes'] })
+    },
+  })
+}
+
 export function useBuscarSimilares() {
   return useMutation({
     mutationFn: api.buscarSimilares,
