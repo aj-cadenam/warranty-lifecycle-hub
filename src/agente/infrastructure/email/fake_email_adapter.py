@@ -2,6 +2,146 @@ from datetime import datetime
 from src.agente.domain.ports import EmailPort, EmailReaderPort
 from src.agente.domain.entities import CorreoEntrante
 
+# ── Brand → provider email ────────────────────────────────────────────────────
+_PROVEEDOR_EMAIL = {
+    "KYO": "garantias@kyocera.com.co",
+    "BAR": "soporte@barco.com",
+    "BSP": "garantias@bosepro.com",
+    "CRE": "soporte@crestron-lac.com",
+    "LG":  "garantias@lg-business.com.co",
+}
+_CLIENTES = [
+    "jperez@constructoraandina.com",
+    "mgarcia@grupobancolombia.com",
+    "ltorres@ecopetrol.com.co",
+    "rcardona@gruposura.com",
+    "avalencia@telmex.com.co",
+]
+
+def _proveedor(serial: str) -> str:
+    prefix = serial.split("-")[0]
+    return _PROVEEDOR_EMAIL.get(prefix, f"soporte@proveedor.com")
+
+
+def build_dynamic_inbox(solicitudes: list) -> list[CorreoEntrante]:
+    """Genera correos fake relevantes para el estado actual de cada solicitud."""
+    correos: list[CorreoEntrante] = []
+    cliente_idx = 0
+
+    for i, sol in enumerate(solicitudes):
+        estado = sol.estado.value if hasattr(sol.estado, "value") else str(sol.estado)
+        serial = sol.equipo_id
+        uid = f"dyn-{i+1:03d}"
+        prov = _proveedor(serial)
+
+        if estado == "despachada":
+            correos.append(CorreoEntrante(
+                uid=uid,
+                asunto=f"Confirmación recepción equipo {serial}",
+                cuerpo=(
+                    f"Estimados señores Datecsa, confirmamos la recepción del equipo serial {serial}. "
+                    f"Nuestro equipo técnico iniciará el diagnóstico en las próximas 48 horas "
+                    f"y les informaremos los hallazgos. Quedo atento a cualquier consulta."
+                ),
+                remitente=prov,
+                adjuntos=[],
+                fecha=datetime.now(),
+            ))
+
+        elif estado == "en_reparacion":
+            correos.append(CorreoEntrante(
+                uid=uid,
+                asunto=f"Diagnóstico completado — equipo listo para retiro {serial}",
+                cuerpo=(
+                    f"Estimados, el equipo serial {serial} fue reparado exitosamente. "
+                    f"Se reemplazó la pieza defectuosa y se realizaron pruebas de funcionamiento "
+                    f"con resultados satisfactorios. El equipo está disponible para retiro o devolución. "
+                    f"Por favor confirmen el método de envío preferido."
+                ),
+                remitente=prov,
+                adjuntos=[],
+                fecha=datetime.now(),
+            ))
+
+        elif estado == "validada":
+            cliente = _CLIENTES[cliente_idx % len(_CLIENTES)]
+            cliente_idx += 1
+            correos.append(CorreoEntrante(
+                uid=uid,
+                asunto=f"Consulta estado garantía equipo {serial}",
+                cuerpo=(
+                    f"Buenos días, le escribo para saber en qué estado se encuentra la garantía "
+                    f"del equipo serial {serial}. Ya llevamos varios días sin el equipo y está "
+                    f"afectando la operación. ¿Podría indicarnos una fecha estimada de entrega? "
+                    f"Quedo pendiente."
+                ),
+                remitente=cliente,
+                adjuntos=[],
+                fecha=datetime.now(),
+            ))
+
+        elif estado == "devuelta":
+            cliente = _CLIENTES[cliente_idx % len(_CLIENTES)]
+            cliente_idx += 1
+            correos.append(CorreoEntrante(
+                uid=uid,
+                asunto=f"RE: Devolución equipo — Confirmamos recepción {serial}",
+                cuerpo=(
+                    f"Buenas tardes, confirmamos que recibimos el equipo serial {serial} "
+                    f"en perfectas condiciones. Ya fue instalado y está funcionando correctamente. "
+                    f"Muchas gracias por el seguimiento y la gestión."
+                ),
+                remitente=_CLIENTES[cliente_idx % len(_CLIENTES)],
+                adjuntos=[],
+                fecha=datetime.now(),
+            ))
+
+        elif estado == "nueva":
+            correos.append(CorreoEntrante(
+                uid=uid,
+                asunto=f"RE: Solicitud garantía {serial} — Acuse de recibo",
+                cuerpo=(
+                    f"Estimados Datecsa, acusamos recibo de la solicitud de garantía para el equipo "
+                    f"serial {serial}. Por favor confirmen la dirección de despacho para coordinar "
+                    f"la recolección del equipo."
+                ),
+                remitente=prov,
+                adjuntos=[],
+                fecha=datetime.now(),
+            ))
+
+    # ── Correos extra siempre presentes ──────────────────────────────────────
+    n = len(correos)
+
+    # Acta de entrega de equipo sin solicitud activa → crea nueva solicitud
+    correos.append(CorreoEntrante(
+        uid=f"dyn-extra-001",
+        asunto="Acta de entrega — Crestron TSW-1070 CRE-TSW-2024-009",
+        cuerpo=(
+            "Buen día, adjunto el acta de entrega del equipo Crestron TSW-1070 "
+            "serial CRE-TSW-2024-009 de la sala de conferencias piso 8. "
+            "Falla: pantalla táctil no responde al tacto en la zona superior izquierda."
+        ),
+        remitente="tecnico.interno@datecsafake.com",
+        adjuntos=[],
+        fecha=datetime.now(),
+    ))
+
+    # Correo que debe ser ignorado
+    correos.append(CorreoEntrante(
+        uid=f"dyn-extra-002",
+        asunto="Kyocera Partner Summit 2026 — Confirmación asistencia",
+        cuerpo=(
+            "Estimados partners, les recordamos que el Partner Summit de Kyocera se realizará "
+            "el 20 de mayo en Bogotá. Por favor confirmen su asistencia antes del 10 de mayo."
+        ),
+        remitente="eventos@kyocera.com.co",
+        adjuntos=[],
+        fecha=datetime.now(),
+    ))
+
+    return correos
+
 _FAKE_INBOX: list[CorreoEntrante] = [
     # 1 — Acta de entrega de nuevo equipo (crea solicitud)
     CorreoEntrante(

@@ -192,14 +192,19 @@ def buscar_similares(
 
 
 @router.get("/inbox-preview")
-def inbox_preview(email_reader=Depends(get_email_reader)):
+def inbox_preview(
+    email_reader=Depends(get_email_reader),
+    solicitud_repo=Depends(get_solicitud_repo),
+):
     from src.agente.infrastructure.email.outlook_adapter import IMAPAuthError
-    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
+    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter, build_dynamic_inbox
+    from src.solicitudes.domain.entities import EstadoSolicitud
     try:
         correos = email_reader.fetch_unread()
         es_mock = False
     except IMAPAuthError:
-        correos = FakeEmailReaderAdapter().fetch_unread()
+        solicitudes = solicitud_repo.find_all()
+        correos = build_dynamic_inbox(solicitudes)
         es_mock = True
     return {
         "total": len(correos),
@@ -232,13 +237,14 @@ def procesar_correos(
     from src.solicitudes.application.crear_solicitud import CrearSolicitud
 
     from src.agente.infrastructure.email.outlook_adapter import IMAPAuthError
-    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter
+    from src.agente.infrastructure.email.fake_email_adapter import FakeEmailReaderAdapter, build_dynamic_inbox
 
     try:
         _ = email_reader.fetch_unread()
         reader = email_reader
     except IMAPAuthError:
-        reader = FakeEmailReaderAdapter()
+        solicitudes = solicitud_repo.find_all()
+        reader = FakeEmailReaderAdapter(correos=build_dynamic_inbox(solicitudes))
 
     caso_uso = ProcesarCorreo(
         llm=llm,
